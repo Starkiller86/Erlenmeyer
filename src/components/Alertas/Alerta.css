@@ -1,0 +1,42 @@
+.alerta-caducidad {
+  width: 100%;
+  background: linear-gradient(90deg, #5f2c82, #49a09d);
+  color: white;
+  padding: 10px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.alerta-contenido {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alerta-contenido .item {
+  margin-left: 8px;
+  font-weight: 500;
+}
+
+.alerta-caducidad button {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 20px;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.3s ease,
+  box-shadow 0.3s ease;
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+.alerta-caducidad button:hover{
+    background: #5f2c82;
+    text-decoration: none;
+    box-shadow:  0 6px 16px rgba(95, 44, 130, 0.35);
+}
+

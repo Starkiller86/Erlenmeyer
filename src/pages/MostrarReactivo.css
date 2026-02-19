@@ -1,0 +1,242 @@
+/* Estilos para MostrarReactivo */
+.mostrar-reactivos-container {
+  max-width: 1400px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.mostrar-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.mostrar-header h1 {
+  color: #7931ff;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.filtros-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.filtros-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto auto;
+  gap: 1rem;
+}
+
+.filtros-grid input,
+.filtros-grid select {
+  padding: 0.75rem;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background: #7931ff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #5f27cc;
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background: white;
+  color: #7931ff;
+  border: 2px solid #7931ff;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 1rem;
+  border: 4px solid #f3f3f3;
+  border-top-color: #7931ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.reactivos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.reactivo-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-left: 4px solid;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.reactivo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+}
+
+.reactivo-header h3 {
+  margin: 0 0 0.5rem 0;
+  color: #212529;
+}
+
+.formula {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.reactivo-info {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.estado-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.estado-activo {
+  background: #28a745;
+  color: white;
+}
+
+.estado-agotado {
+  background: #dc3545;
+  color: white;
+}
+
+.reactivo-detalles {
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.reactivo-detalles div {
+  margin-bottom: 0.25rem;
+}
+
+.reactivo-codigo {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.reactivo-codigo code {
+  font-size: 0.85rem;
+  color: #7931ff;
+  font-weight: 600;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.modal-body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2rem;
+  margin: 1.5rem 0;
+}
+
+.modal-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-qr code {
+  font-size: 0.8rem;
+  text-align: center;
+  word-break: break-all;
+}
+
+@media (max-width: 768px) {
+  .filtros-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .reactivos-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-body {
+    grid-template-columns: 1fr;
+  }
+}

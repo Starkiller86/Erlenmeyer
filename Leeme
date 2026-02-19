@@ -1,0 +1,452 @@
+# 🧪 Sistema de Gestión de Inventario de Reactivos Químicos
+
+Sistema web completo para la gestión del inventario del Laboratorio de Nanotecnología de la Universidad Tecnológica de Querétaro.
+
+## 📋 Descripción del Proyecto
+
+Aplicación web desarrollada como parte del servicio social que permite:
+- ✅ Registro rápido de reactivos químicos
+- 🎯 Generación automática de códigos QR únicos
+- 📷 Lectura de códigos QR desde la cámara web/móvil
+- 📊 Visualización y búsqueda del inventario
+- ⚠️ Sistema de alertas por nivel de peligrosidad
+- 🔍 Búsqueda automática de fórmulas químicas
+
+## 🏗️ Arquitectura del Proyecto
+
+```
+proyecto-reactivos/
+├── src/
+│   ├── components/         # Componentes reutilizables
+│   │   ├── Navbar/        # Barra de navegación
+│   │   ├── FormularioReactivo/  # Formulario de alta
+│   │   └── LectorQR/      # Lector de códigos QR
+│   ├── pages/             # Páginas de la aplicación
+│   │   ├── Inicio.jsx     # Página principal
+│   │   ├── AltaReactivo.jsx  # Página de registro
+│   │   ├── MostrarReactivo.jsx  # Lista de reactivos
+│   │   └── LectorQR.jsx   # Página de escáner
+│   ├── routes/            # Configuración de rutas
+│   │   └── routes.jsx
+│   ├── services/          # Servicios de API
+│   │   ├── api.service.js      # Comunicación con backend
+│   │   └── database.service.js # Operaciones de BD
+│   ├── utils/             # Utilidades
+│   │   └── qrCodeUtils.js # Generación de códigos QR
+│   ├── config/            # Configuración
+│   │   └── database.config.js
+│   ├── App.jsx            # Componente principal
+│   └── main.jsx           # Punto de entrada
+├── database/              # Scripts de base de datos
+│   └── schema.sql         # Esquema completo de BD
+├── public/                # Archivos públicos
+│   └── qr-codes/          # Imágenes QR generadas
+├── server.js              # Servidor backend (Node.js + Express)
+├── package.json           # Dependencias del proyecto
+├── vite.config.js         # Configuración de Vite
+└── README.md              # Este archivo
+
+```
+
+## 🚀 Instalación y Configuración
+
+### Requisitos Previos
+
+- **Node.js** (v18 o superior): [Descargar aquí](https://nodejs.org/)
+- **MySQL** (v8.0 o superior): [Descargar aquí](https://dev.mysql.com/downloads/)
+- **Git**: [Descargar aquí](https://git-scm.com/)
+
+### Paso 1: Clonar el Repositorio
+
+```bash
+git clone <url-del-repositorio>
+cd proyecto-reactivos
+```
+
+### Paso 2: Instalar Dependencias
+
+```bash
+npm install mysql2
+npm install react-router-dom
+```
+
+Este comando instalará todas las dependencias necesarias tanto para el frontend como para el backend.
+
+### Paso 3: Configurar la Base de Datos
+
+1. **Inicia MySQL** en tu computadora
+
+2. **Crea la base de datos** ejecutando el script SQL:
+
+```bash
+mysql -u root -p < database/schema.sql
+```
+
+O manualmente desde MySQL Workbench/phpMyAdmin:
+- Abre el archivo `database/schema.sql`
+- Ejecuta todo el contenido
+
+3. **Verifica la creación**:
+```sql
+USE inventario_reactivos;
+SHOW TABLES;
+```
+
+Deberías ver las tablas: `reactivos`, `clasificaciones`, `historial_movimientos`, `usuarios`
+
+### Paso 4: Configurar Variables de Entorno
+
+1. **Copia el archivo de ejemplo**:
+```bash
+cp .env.example .env
+```
+
+2. **Edita el archivo `.env`** con tus credenciales:
+
+```env
+# Configuración de Base de Datos
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=tu_contraseña_mysql
+DB_NAME=inventario_reactivos
+
+# Configuración del Servidor
+PORT=3001
+NODE_ENV=development
+
+# URL de la API para el frontend
+VITE_API_URL=http://localhost:3001/api
+```
+
+### Paso 5: Crear Directorio para Códigos QR
+
+```bash
+mkdir -p public/qr-codes
+```
+
+## ▶️ Ejecución de la Aplicación
+
+### Opción 1: Ejecutar Todo Junto (Recomendado)
+
+```bash
+npm start
+```
+
+Este comando inicia:
+- ✅ Servidor backend en `http://localhost:3001`
+- ✅ Frontend React en `http://localhost:5173`
+
+### Opción 2: Ejecutar por Separado
+
+**Terminal 1 - Backend:**
+```bash
+npm run server:dev
+```
+
+**Terminal 2 - Frontend:**
+```bash
+npm run dev
+```
+
+### Acceder a la Aplicación
+
+Abre tu navegador en: **http://localhost:5173**
+
+## 📱 Funcionalidades Principales
+
+### 1. Registro de Reactivos
+
+**Ruta:** `/alta`
+
+- Formulario intuitivo con validación
+- Búsqueda automática de fórmulas químicas (PubChem API)
+- Generación automática de código QR único
+- Clasificación por nivel de peligrosidad con colores
+- Descarga de código QR como imagen PNG
+
+**Campos del formulario:**
+- Nombre del reactivo (requerido)
+- Clasificación (requerido)
+- Fórmula química (opcional, con búsqueda automática)
+- Número CAS
+- Presentación (líquido, sólido, gas, etc.)
+- Cantidad y unidad de medida
+- Stock mínimo
+- Ubicación en laboratorio
+- Número de frascos
+- Información adicional (lote, caducidad, fabricante, etc.)
+
+### 2. Lector de QR
+
+**Ruta:** `/lector`
+
+- Escaneo desde cámara web o móvil
+- Selección de cámara (frontal/trasera)
+- Búsqueda manual por código
+- Visualización inmediata de información del reactivo
+- Indicadores de nivel de peligro
+
+**Características:**
+- ✅ Compatible con todos los dispositivos
+- ✅ Funciona en navegadores modernos
+- ✅ Soporte para múltiples cámaras
+- ✅ Feedback visual y por vibración
+
+### 3. Visualización de Inventario
+
+**Ruta:** `/mostrar`
+
+- Lista completa de reactivos
+- Filtros por nombre, clasificación y estado
+- Búsqueda en tiempo real
+- Vista detallada en modal
+- Descarga de código QR individual
+- Indicadores visuales de stock y peligrosidad
+
+### 4. Página de Inicio
+
+**Ruta:** `/`
+
+- Dashboard con estadísticas
+- Accesos rápidos a funciones principales
+- Resumen del estado del inventario
+- Información del sistema
+
+## 🎨 Sistema de Clasificación por Colores
+
+El sistema usa colores para identificar rápidamente el tipo y peligrosidad de los reactivos:
+
+| Color | Clasificación | Nivel de Peligro |
+|-------|--------------|------------------|
+| 🔴 Rojo | Ácido / Corrosivo / Tóxico | Muy Alto |
+| 🟠 Naranja | Oxidante / Inflamable | Alto |
+| 🟡 Amarillo | Irritante | Medio |
+| 🔵 Azul | Base / Analítico | Variable |
+| 🟢 Verde | Bioquímico / Bajo riesgo | Bajo |
+| ⚫ Gris | Técnico / Estándar | Bajo |
+
+## 🔐 Nomenclatura de Códigos QR
+
+**Formato:** `LAB-{ID}-{CLASIFICACIÓN}-{AÑO}`
+
+**Ejemplo:** `LAB-00042-ACD-2026`
+
+- **LAB:** Prefijo del laboratorio
+- **00042:** ID del reactivo (5 dígitos con ceros)
+- **ACD:** Código de clasificación (3 letras)
+- **2026:** Año de registro
+
+**Ventajas:**
+- ✅ Identificación única e irrepetible
+- ✅ Trazabilidad por año y clasificación
+- ✅ Fácil lectura visual
+- ✅ Compatible con escáneres industriales
+
+## 🔧 Scripts Disponibles
+
+```bash
+# Desarrollo
+npm run dev          # Inicia solo el frontend
+npm run server:dev   # Inicia solo el backend con auto-reload
+npm start           # Inicia frontend y backend juntos
+
+# Producción
+npm run build       # Genera build de producción del frontend
+npm run preview     # Vista previa del build
+npm run server      # Inicia servidor en modo producción
+
+# Base de datos
+mysql -u root -p < database/schema.sql  # Crear/actualizar BD
+```
+
+## 🗄️ Estructura de la Base de Datos
+
+### Tablas Principales
+
+1. **clasificaciones**: Tipos de reactivos (ácido, base, oxidante, etc.)
+2. **reactivos**: Información completa de cada reactivo
+3. **historial_movimientos**: Registro de entradas/salidas
+4. **usuarios**: Sistema de usuarios (para futuras mejoras)
+
+### Vistas
+
+- **vista_reactivos_completa**: Join de reactivos con clasificaciones
+- **vista_estadisticas**: Estadísticas por clasificación
+
+### Procedimientos Almacenados
+
+- **registrar_movimiento**: Registra movimientos de inventario con actualización automática
+
+## 🌐 API Endpoints
+
+### Clasificaciones
+- `GET /api/clasificaciones` - Lista todas las clasificaciones
+
+### Reactivos
+- `GET /api/reactivos` - Lista reactivos con filtros opcionales
+- `POST /api/reactivos` - Crea nuevo reactivo
+- `GET /api/reactivos/:id` - Obtiene un reactivo por ID
+- `GET /api/reactivos/qr/:codigo` - Busca reactivo por código QR
+
+### Códigos QR
+- `GET /api/qr/generar/:codigo` - Genera imagen QR
+
+### Estadísticas
+- `GET /api/estadisticas` - Obtiene estadísticas del inventario
+
+### Búsqueda Química
+- `GET /api/quimica/buscar?nombre={nombre}` - Busca fórmula en PubChem
+
+### Health Check
+- `GET /api/health` - Verifica estado de la API
+
+## 📦 Dependencias Principales
+
+### Frontend
+- **React 18** - Framework UI
+- **React Router DOM** - Enrutamiento
+- **React Icons** - Iconografía
+- **qrcode.react** - Generación de QR en React
+- **html5-qrcode** - Lectura de QR desde cámara
+- **Bootstrap 5** - Estilos base
+- **Vite** - Build tool
+
+### Backend
+- **Express** - Framework web
+- **MySQL2** - Driver de MySQL con soporte de promesas
+- **QRCode** - Generación de imágenes QR
+- **CORS** - Control de acceso entre orígenes
+- **Node.js 18+** - Runtime
+
+## 🐛 Solución de Problemas
+
+### Error: "Cannot connect to MySQL"
+```bash
+# Verifica que MySQL esté corriendo
+mysql -u root -p
+
+# Verifica las credenciales en .env
+DB_USER=root
+DB_PASSWORD=tu_contraseña
+```
+
+### Error: "Port 3001 already in use"
+```bash
+# Encuentra y cierra el proceso
+lsof -i :3001
+kill -9 <PID>
+
+# O cambia el puerto en .env
+PORT=3002
+```
+
+### Error: "Module not found"
+```bash
+# Re-instala las dependencias
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### La cámara no funciona
+- Verifica permisos del navegador para cámara
+- Usa HTTPS en producción (requerido por navegadores)
+- Prueba con diferentes navegadores (Chrome recomendado)
+
+## 📚 Guía de Uso
+
+### Para Registrar un Reactivo
+
+1. Ve a "Alta de Reactivos" desde el menú
+2. Completa los campos obligatorios (nombre y clasificación)
+3. Usa el botón "🔍 Buscar" para obtener la fórmula automáticamente
+4. Completa información adicional según disponibilidad
+5. Presiona "💾 Registrar Reactivo"
+6. El sistema generará el código QR automáticamente
+7. Descarga el QR e imprímelo para pegarlo en el frasco
+
+### Para Consultar un Reactivo
+
+**Opción 1: Escanear QR**
+1. Ve a "Lector QR"
+2. Permite acceso a la cámara
+3. Apunta al código QR del reactivo
+4. Visualiza la información completa
+
+**Opción 2: Buscar en lista**
+1. Ve a "Mostrar Reactivos"
+2. Usa los filtros de búsqueda
+3. Click en cualquier tarjeta para ver detalles
+
+## 🚀 Despliegue en Producción
+
+### Frontend (Vite)
+
+```bash
+npm run build
+# Los archivos estarán en /dist
+
+# Sirve los archivos con un servidor web (nginx, apache, vercel, etc.)
+```
+
+### Backend (Node.js)
+
+```bash
+# Configurar variables de entorno de producción
+NODE_ENV=production
+
+# Usar PM2 para gestión de procesos
+npm install -g pm2
+pm2 start server.js --name inventario-api
+pm2 save
+pm2 startup
+```
+
+### Base de Datos
+
+- Crear respaldo regular con `mysqldump`
+- Configurar usuario de BD específico para la aplicación
+- Usar conexiones SSL en producción
+
+## 🤝 Contribuir
+
+Este proyecto fue desarrollado como parte del servicio social en la UTQ. Para contribuir:
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+## 👥 Equipo de Desarrollo
+
+Proyecto de Servicio Social - Universidad Tecnológica de Querétaro
+Laboratorio de Nanotecnología - 2026
+
+## 📝 Licencia
+
+Este proyecto es de código abierto bajo licencia MIT.
+
+## 📞 Soporte
+
+Para problemas o preguntas:
+- Abre un issue en el repositorio
+- Contacta al equipo de desarrollo
+- Consulta la documentación técnica
+
+## ✅ Checklist de Mejoras Futuras
+
+- [ ] Sistema de autenticación de usuarios
+- [ ] Reportes en PDF/Excel
+- [ ] Notificaciones por email de stock bajo
+- [ ] Historial de movimientos con firma digital
+- [ ] App móvil nativa (Flutter/React Native)
+- [ ] Integración con sistema de compras
+- [ ] Dashboard de analítica avanzada
+- [ ] Multi-idioma (i18n)
+- [ ] Modo oscuro
+- [ ] Backup automático de BD
+
+---
+
+**¡Gracias por usar el Sistema de Gestión de Inventario de Reactivos! 🧪**

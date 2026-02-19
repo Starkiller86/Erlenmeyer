@@ -1,0 +1,51 @@
+{
+  "name": "y_app_reactivos",
+  "version": "1.0.0",
+  "description": "Sistema de gestión de inventario para reactivos químicos del Laboratorio de Nanotecnología - UTQ",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host --port 5174",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node server.js",
+    "server:dev": "nodemon server.js",
+    "start": "concurrently \"npm run server:dev\" \"npm run dev\""
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.8",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.3",
+    "express": "^4.22.1",
+    "html5-qrcode": "^2.3.8",
+    "lucide-react": "^0.563.0",
+    "mysql2": "^3.16.3",
+    "qrcode": "^1.5.3",
+    "qrcode.react": "^3.1.0",
+    "react": "^18.2.0",
+    "react-bootstrap": "^2.10.10",
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^6.30.3",
+    "yarn": "^1.22.22"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2",
+    "vite": "^5.0.8"
+  },
+  "author": "Equipo de Servicio Social - UTQ",
+  "license": "MIT",
+  "main": "server.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YoshireOneUp/y_app_reactivos.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/YoshireOneUp/y_app_reactivos/issues"
+  },
+  "homepage": "https://github.com/YoshireOneUp/y_app_reactivos#readme"
+}
