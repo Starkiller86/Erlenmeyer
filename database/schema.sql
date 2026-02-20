@@ -163,7 +163,7 @@ SELECT
     r.fecha_caducidad,
     r.lote,
     r.fabricante,
-    r.clasificacion_id
+    r.clasificacion_id,
     c.nombre AS clasificacion,
     c.codigo AS clasificacion_codigo,
     c.color_hex,

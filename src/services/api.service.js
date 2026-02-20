@@ -18,24 +18,25 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 const fetchAPI = async (endpoint, options = {}) => {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
-    
-    // Configuración por defecto
+
+    const token = localStorage.getItem('token');
+
     const config = {
+      ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
-      ...options,
     };
-    
+
     const response = await fetch(url, config);
-    
-    // Si la respuesta no es exitosa, lanzar error
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Error HTTP: ${response.status}`);
+      throw new Error(errorData.error || `Error HTTP: ${response.status}`);
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error('Error en petición API:', error);

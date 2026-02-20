@@ -7,8 +7,8 @@
   pointer-events: none;
 }
 /* Altura del navbar */
-body {
-  padding-top: 70px;
+.navbar {
+  height: 60px;
 }
 
 @media (prefers-reduced-motion: no-preference) {

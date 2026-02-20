@@ -1,107 +1,140 @@
-/* =========================
-   CONTENEDOR GENERAL
-========================= */
+/* src/components/Navbar/Navbar.css - MODIFICADO */
+/* Se mantienen todos los estilos originales + se agregan los nuevos */
+
 .custom-navbar {
-  background: #20004a;
-  padding: 0.5rem 1.5rem;
+  background: linear-gradient(135deg, #1a0533 0%, #2d1052 60%, #4a1a7a 100%) !important;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
+  padding: 0.5rem 0;
 }
 
+.custom-navbar .navbar-brand {
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.3px;
+}
 
-/* =========================
-   LOGO
-========================= */
-.navbar-brand {
-color: #EDEAFF!important;
+.custom-navbar .navbar-toggler {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.custom-navbar .navbar-toggler-icon {
+  filter: brightness(10);
+}
+
+/* ── Links estándar del navbar ── */
+.custom-navbar .btn {
+  color: rgba(255, 255, 255, 0.85) !important;
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.custom-navbar .btn:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+}
+
+/* ── NUEVO: Botón Solicitud de Material (destacado) ── */
+.custom-navbar .btn-solicitud {
+  color: #fff !important;
   font-weight: 600;
-  font-size: 1.1rem;
-  text-decoration: none;
 }
 
-.navbar-brand svg {
-  color: #D6D6E0;
+.custom-navbar .btn-solicitud:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+  border-color: rgba(200, 140, 255, 0.7) !important;
 }
 
-/* =========================
-   BOTÓN HAMBURGUESA
-========================= */
-.navbar-toggler {
-  border-color: #00e5ff;
+/* ── Sección usuario + logout ── */
+.nav-user-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.navbar-toggler-icon {
-  filter: invert(1);
+.nav-user-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
-/* =========================
-   OFFCANVAS
-========================= */
+.nav-rol-badge {
+  background: rgba(255, 200, 100, 0.25);
+  color: #fcd34d;
+  border: 1px solid rgba(252, 211, 77, 0.4);
+  border-radius: 10px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* ── NUEVO: Botón logout ── */
+.custom-navbar .btn-logout {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(255, 100, 100, 0.35);
+  border-radius: 6px;
+  background: rgba(255, 80, 80, 0.1);
+  color: rgba(255, 160, 160, 0.9) !important;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.custom-navbar .btn-logout:hover {
+  background: rgba(220, 50, 50, 0.25) !important;
+  border-color: rgba(255, 100, 100, 0.6) !important;
+  color: #fff !important;
+}
+
+/* ── Offcanvas (móvil) ── */
 .offcanvas {
-  background: #0b1d26;
-  color: #26005f;
+  background: linear-gradient(160deg, #1a0533, #2d1052) !important;
 }
 
-.offcanvas-header {
-  border-bottom: 1px solid rgba(0, 229, 255, 0.3);
+.offcanvas-header .btn-close {
+  filter: brightness(10);
 }
 
 .offcanvas-title {
-  color: #a600ff;
+  color: #fff !important;
+  font-weight: 600;
 }
 
-/* =========================
-   LINKS (BOTONES)
-========================= */
-.nav-link.btn {
-  color: #f0e8ff !important;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+.offcanvas .nav-user-section {
+  border-left: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 0.75rem;
+  margin-top: 0.25rem;
+  margin-left: 0;
+  flex-wrap: wrap;
 }
 
-/* Hover */
-.nav-link.btn:hover {
-  background:  rgba(111, 0, 255, 0.55);
-  color: #EDEAFF !important;
-}
-
-/* Activo */
-.nav-link.active {
-  background: rgba(0, 229, 255, 0.25);
-  color: #00e5ff !important;
-}
-
-/* =========================
-   ICONOS
-========================= */
-.nav-link svg {
-  font-size: 18px;
-  color: inherit;
-}
-
-/* =========================
-   ANIMACIÓN SVG (DESKTOP)
-========================= */
-@media (min-width: 992px) {
-  .navbar::after {
-    content: "";
-    display: block;
-    height: 3px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      #5a01ac,
-      transparent
-    );
-    animation: glow 3s infinite;
+/* ── Responsive ── */
+@media (max-width: 991px) {
+  .custom-navbar .btn {
+    justify-content: flex-start;
+    width: 100%;
   }
-}
-
-@keyframes glow {
-  0% { opacity: 0.3; }
-  50% { opacity: 1; }
-  100% { opacity: 0.3; }
+  .nav-user-section {
+    flex-wrap: wrap;
+    width: 100%;
+  }
 }
