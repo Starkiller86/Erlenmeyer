@@ -9,6 +9,7 @@ import AltaReactivo from '../pages/AltaReactivo';
 import MostrarReactivos from '../pages/MostrarReactivo';
 import LectorQR from '../pages/LectorQR';
 import SolicitudMaterial from '../pages/SolicitudMaterial'; // ← NUEVO
+import GestionUsuarios from '../pages/GestionUsuarios';
 
 const AppRoutes = () => {
   return (
@@ -18,6 +19,7 @@ const AppRoutes = () => {
       <Route path="/mostrar" element={<MostrarReactivos />} />
       <Route path="/lector" element={<LectorQR />} />
       <Route path="/solicitud-material" element={<SolicitudMaterial />} /> {/* ← NUEVO */}
+      <Route path="/usuarios" element={<GestionUsuarios />} />
     </Routes>
   );
 };

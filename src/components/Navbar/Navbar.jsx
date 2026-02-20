@@ -4,6 +4,7 @@ import { Container, Nav, Navbar, Offcanvas } from 'react-bootstrap';
 import { GiChemicalDrop } from 'react-icons/gi';
 import { FaHome, FaPlus, FaList, FaQrcode, FaClipboardList, FaSignOutAlt, FaUserCircle } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import { FaUsers } from 'react-icons/fa';
 import './Navbar.css';
 
 const NavBar = () => {
@@ -74,6 +75,13 @@ const NavBar = () => {
                   <FaSignOutAlt size={14} /> Salir
                 </button>
               </div>
+
+              {/* Solo visible para admins */}
+              {user?.rol === 'admin' && (
+                <Nav.Link as={Link} to="/usuarios" className="btn btn-solicitud">
+                  <FaUsers size={16} /> Gestión de Usuarios
+                </Nav.Link>
+              )}
 
             </Nav>
           </Offcanvas.Body>
