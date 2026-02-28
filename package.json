@@ -12,10 +12,11 @@
     "start": "concurrently \"npm run server:dev\" \"npm run dev\""
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.98.0",
     "bcrypt": "^6.0.0",
     "bootstrap": "^5.3.8",
     "cors": "^2.8.6",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.3.1",
     "express": "^4.22.1",
     "html5-qrcode": "^2.3.8",
     "jsonwebtoken": "^9.0.3",

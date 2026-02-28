@@ -8,7 +8,7 @@ import { FaUser, FaLock, FaSignInAlt } from 'react-icons/fa';
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +17,7 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const userData = await login(form.username, form.password);
+      const userData = await login(form.email, form.password);
       // Redirigir según rol
       navigate('/', { replace: true });
     } catch (err) {
@@ -25,9 +25,12 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+    console.log(import.meta.env.VITE_SUPABASE_URL);
+console.log(import.meta.env.VITE_SUPABASE_ANON_KEY);
   };
 
   return (
+    
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #1a0533 0%, #2d1052 40%, #4a1a7a 70%, #6b35a8 100%)',
@@ -79,7 +82,7 @@ export default function LoginPage() {
             {/* Usuario */}
             <div className="mb-3">
               <label className="form-label fw-semibold" style={{ fontSize: '0.85rem', color: '#374151' }}>
-                Usuario
+                Correo
               </label>
               <div className="input-group">
                 <span className="input-group-text" style={{ background: '#f3f0ff', border: '1px solid #d1c4e9', color: '#5e35b1' }}>
@@ -88,9 +91,9 @@ export default function LoginPage() {
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Tu nombre de usuario"
-                  value={form.username}
-                  onChange={e => setForm(p => ({ ...p, username: e.target.value }))}
+                  placeholder="Tu correo"
+                  value={form.email}
+                  onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
                   required
                   autoFocus
                   style={{ borderLeft: 'none' }}

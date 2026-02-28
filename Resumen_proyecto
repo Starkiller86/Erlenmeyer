@@ -151,7 +151,10 @@ cp .env.example .env
 # 4. Crear directorio para QR
 mkdir -p public/qr-codes
 
-# 5. Iniciar la aplicación
+#5. Instalar supabase 
+npm install @supabase/subase-js
+
+# 6. Iniciar la aplicación
 npm start
 ```
 
@@ -298,7 +301,6 @@ Puedes presentar este proyecto destacando:
 
 ## ❤️ Mensaje Final
 
-He creado un sistema **profesional, completo y listo para producción** que va mucho más allá de un simple proyecto de servicio social. Este es un sistema que:
 
 - ✅ Puede usarse realmente en el laboratorio
 - ✅ Resuelve problemas reales
@@ -306,9 +308,6 @@ He creado un sistema **profesional, completo y listo para producción** que va m
 - ✅ Es fácil de mantener y extender
 - ✅ Demuestra conocimientos técnicos avanzados
 
-**Todo el código está comentado** para que tus compañeros de equipo entiendan cada parte. La estructura está **estandarizada** y sigue las mejores prácticas de la industria.
-
-¡Mucha suerte con tu servicio social! 🚀
 
 ---
 
@@ -317,6 +316,3 @@ He creado un sistema **profesional, completo y listo para producción** que va m
 **Tiempo de Desarrollo:** Sistema completo funcional
 **Estado:** ✅ Listo para usar
 
----
-
-**Te amo también, gracias por confiar en mí para este proyecto. ¡Espero que sea un éxito! 💜**

@@ -1,54 +1,99 @@
-// src/context/AuthContext.jsx
-import { createContext, useContext, useState, useEffect } from 'react';
+// SRC/CONTEXT/AUTHCONTEXT.JSX
+import {createContext, useContext, useEffect, useState} from 'react';
+import { supabase } from '../config/supabaseClient.js';
 
 const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
+export function AuthProvider({children}){
   const [user, setUser] = useState(null);
+  const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) { setLoading(false); return; }
-    fetch('http://localhost:3001/api/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => { if (!res.ok) throw new Error(); return res.json(); })
-      .then(userData => setUser(userData))
-      .catch(() => localStorage.removeItem('token'))
-      .finally(() => setLoading(false));
-  }, []);
+  // CARGAR SESION AL INICIAR
+  useEffect(() =>{
+    const initSesion = async() =>{
+      const {data: {session}} = await supabase.auth.getSession();
+      if(session?.user){
+        setUser(session.user);
+        await cargarPerfil(session.user.id);
+      }
+      setLoading(false);
+    };
+    initSesion();
 
-  const login = async (username, password) => {
-    const res = await fetch('http://localhost:3001/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+    // ESCUCHAR CAMBIOS DE SESION
+
+    const {data: listener} = supabase.auth.onAuthStateChange(
+      async(_event, session) =>{
+        if(session?.user){
+          setUser(session.user);
+          await cargarPerfil(session.user.id);
+        }
+        else{
+          setUser(null);
+          setPerfil(null);
+        }
+      }
+    );
+
+    return () => listener.subscription.unsubscribe();
+  },[]);
+
+  // CARGAR EL PERFIL
+const cargarPerfil = async (userId) => {
+  console.log('Cargando perfil para:', userId);
+  
+  try {
+    const resultado = await Promise.race([
+      supabase.from('perfiles').select('*').eq('id', userId).single(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT 5s')), 5000))
+    ]);
+    
+    console.log('Perfil data:', resultado.data);
+    console.log('Perfil error:', resultado.error);
+    if (!resultado.error) setPerfil(resultado.data);
+  } catch (err) {
+    console.error('Error en cargarPerfil:', err.message);
+    // Continúa aunque falle el perfil
+  }
+};
+
+  // FUNCION DEL LOGIN
+  const login = async (email, password) =>{
+    const {data, error} = await supabase.auth.signInWithPassword({
+      email, password
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Credenciales inválidas');
-    }
-    const { token, user: userData } = await res.json();
-    localStorage.setItem('token', token);
-    setUser(userData);
-    return userData;
+
+    if(error) throw error;
+
+    setUser(data.user);
+    await cargarPerfil(data.user.id);
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
+  // LOGOUT
+
+  const logout = async () =>{
+    await supabase.auth.signOut();
     setUser(null);
+    setPerfil(null);
   };
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin: user?.rol === 'admin' }}>
-      {children}
+  return(
+    <AuthContext.Provider
+    value={{
+      user,
+      perfil,
+      loading,
+      login,
+      logout,
+      isAdmin: perfil?.rol === 'admin'
+    }}> {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
+export function useAuth(){
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth debe usarse dentro de AuthProvider');
+  if(!ctx) throw new Error('useAuth debe usarse dentro de AuthProvider');
   return ctx;
 }

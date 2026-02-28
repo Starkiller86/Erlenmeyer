@@ -7,7 +7,8 @@ import React, { useState, useEffect } from 'react';
 import {
   obtenerClasificaciones,
   registrarReactivo,
-  buscarFormulaQuimica
+  buscarFormulaQuimica,
+  actualizarCodigoQR  // ← NUEVA FUNCIÓN AGREGADA
 } from '../../services/api.service';
 import { generarCodigoQR } from '../../utils/qrCodeUtils';
 import { QRCodeSVG } from 'qrcode.react';
@@ -91,7 +92,7 @@ const FormularioReactivo = () => {
     try {
       const data = await obtenerClasificaciones();
       setClasificaciones(data);
-      console.log('Clasificaciones cargadas:', data); // Para debug
+      console.log('Clasificaciones cargadas:', data);
     } catch (error) {
       mostrarMensaje('error', 'Error al cargar clasificaciones: ' + error.message);
       console.error('Error cargando clasificaciones:', error);
@@ -126,19 +127,23 @@ const FormularioReactivo = () => {
     setBuscandoFormula(true);
     try {
       const resultado = await buscarFormulaQuimica(formData.nombre);
+      console.log('clasificacion_codigo recibido:', resultado.clasificacion_codigo);
+      console.log('clasificaciones disponibles:', clasificaciones.map(c => c.codigo));
 
-      if (resultado.formula) {
-        setFormData(prev => ({
-          ...prev,
-          formula_quimica: resultado.formula,
-          cas_number: resultado.cas_number || prev.cas_number
-        }));
-        mostrarMensaje('success', '¡Fórmula encontrada!');
-      } else {
-        mostrarMensaje('info', 'No se encontró la fórmula. Puedes ingresarla manualmente.');
-      }
+      const clasificacion = clasificaciones.find(c => c.codigo === resultado.clasificacion_codigo);
+      console.log('clasificacion encontrada:', clasificacion);
+
+      setFormData(prev => ({
+        ...prev,
+        formula_quimica: resultado.formula || prev.formula_quimica,
+        cas_number: resultado.cas_number || prev.cas_number,
+        clasificacion_id: clasificacion ? String(clasificacion.id) : prev.clasificacion_id
+      }));
+
+      const msgClasificacion = clasificacion ? ` | Clasificación: ${clasificacion.nombre}` : '';
+      mostrarMensaje('success', ` Fórmula: ${resultado.formula} | CAS: ${resultado.cas_number || 'N/D'}${msgClasificacion}`);
     } catch (error) {
-      mostrarMensaje('warning', 'No se pudo buscar la fórmula automáticamente');
+      mostrarMensaje('warning', 'No se encontró el reactivo en PubChem. Ingresa los datos manualmente.');
     } finally {
       setBuscandoFormula(false);
     }
@@ -157,13 +162,10 @@ const FormularioReactivo = () => {
       mostrarMensaje('error', 'La cantidad actual debe ser mayor a 0');
       return false;
     }
-
-
     if (!formData.clasificacion_id) {
       mostrarMensaje('error', 'Debes seleccionar una clasificación');
       return false;
     }
-
     return true;
   };
 
@@ -173,8 +175,7 @@ const FormularioReactivo = () => {
   const generarVistaPrevia = () => {
     if (!validarFormulario()) return;
 
-    // Generar un código temporal (el ID real se asignará al guardar)
-    const idTemporal = Date.now() % 100000; // ID temporal basado en timestamp
+    const idTemporal = Date.now() % 100000;
     const codigoClasificacion = clasificacionSeleccionada?.codigo || 'XXX';
     const codigoGenerado = generarCodigoQR(idTemporal, codigoClasificacion);
 
@@ -184,6 +185,11 @@ const FormularioReactivo = () => {
 
   /**
    * Maneja el envío del formulario
+   * FLUJO CORREGIDO:
+   * 1. Insertar reactivo sin codigo_qr
+   * 2. Obtener el ID real asignado por Supabase
+   * 3. Generar el código QR con ese ID real
+   * 4. Actualizar el reactivo con el codigo_qr generado
    * @param {Event} e - Evento del formulario
    */
   const handleSubmit = async (e) => {
@@ -195,7 +201,7 @@ const FormularioReactivo = () => {
     setMensaje({ tipo: '', texto: '' });
 
     try {
-      // Preparar datos para enviar
+      // Preparar datos para enviar (sin codigo_qr por ahora)
       const reactivo = {
         ...formData,
         cantidad_actual: parseFloat(formData.cantidad_actual) || 0,
@@ -204,14 +210,18 @@ const FormularioReactivo = () => {
         clasificacion_id: parseInt(formData.clasificacion_id)
       };
 
-      // Registrar el reactivo
+      // PASO 1: Registrar el reactivo (codigo_qr llegará como null/vacío)
       const resultado = await registrarReactivo(reactivo);
 
-      // Generar código QR con el ID real
+      // PASO 2: Generar el código QR con el ID real asignado por la BD
       const codigoClasificacion = clasificacionSeleccionada?.codigo || 'XXX';
       const codigoGenerado = generarCodigoQR(resultado.id, codigoClasificacion);
-      setCodigoQR(codigoGenerado);
 
+      // PASO 3: Actualizar el reactivo con el código QR real
+      await actualizarCodigoQR(resultado.id, codigoGenerado);
+
+      // Actualizar estado con el código QR generado
+      setCodigoQR(codigoGenerado);
       mostrarMensaje('success', '¡Reactivo registrado exitosamente!');
       setMostrarQR(true);
 
@@ -347,6 +357,15 @@ const FormularioReactivo = () => {
                   placeholder="Ej: Ácido Sulfúrico, Cloruro de Sodio"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={buscarFormula}
+                  disabled={buscandoFormula}
+                  className="btn-buscar"
+                >
+                  {buscandoFormula ? 'Buscando...' : 'Buscar'}
+                </button>
+                <small>Puedes buscarla automáticamente o ingresarla manualmente</small>
               </div>
 
               <div className="form-group flex-1">
@@ -362,7 +381,7 @@ const FormularioReactivo = () => {
                 >
                   <option value="">Selecciona una clasificación</option>
                   {clasificaciones.map(clasificacion => (
-                    <option key={clasificacion.id} value={clasificacion.id}>
+                    <option key={clasificacion.id} value={String(clasificacion.id)}>
                       {clasificacion.nombre} ({clasificacion.codigo})
                     </option>
                   ))}
@@ -402,16 +421,7 @@ const FormularioReactivo = () => {
                     onChange={handleChange}
                     placeholder="Ej: H₂SO₄, NaCl, C₆H₁₂O₆"
                   />
-                  <button
-                    type="button"
-                    onClick={buscarFormula}
-                    disabled={buscandoFormula}
-                    className="btn-buscar"
-                  >
-                    {buscandoFormula ? 'Buscando...' : 'Buscar'}
-                  </button>
                 </div>
-                <small>Puedes buscarla automáticamente o ingresarla manualmente</small>
               </div>
 
               <div className="form-group flex-1">
@@ -465,6 +475,7 @@ const FormularioReactivo = () => {
                   <option value="unidades">Unidades</option>
                 </select>
               </div>
+
               <div className="form-group">
                 <label htmlFor="cantidad_actual">
                   Cantidad actual <span className="required">*</span>
@@ -481,6 +492,7 @@ const FormularioReactivo = () => {
                   required
                 />
               </div>
+
               <div className="form-group">
                 <label htmlFor="numero_frascos">Número de Frascos/Contenedores</label>
                 <input
@@ -634,7 +646,6 @@ const FormularioReactivo = () => {
                     className="btn-icon"
                     title="Copiar código"
                   >
-
                   </button>
                 </div>
 

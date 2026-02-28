@@ -3,11 +3,6 @@
 // Lista todos los reactivos con búsqueda y filtros
 // ============================================
 
-// Importaciones necesarias para el componente:
-// - React y hooks para manejo de estado y efectos
-// - Servicios de API para obtener datos y descargar QR
-// - Componente para generar códigos QR
-// - Estilos CSS del componente
 import React, { useState, useEffect } from 'react';
 import {
   obtenerReactivos,
@@ -17,15 +12,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import './MostrarReactivo.css';
 
-// Definición del componente funcional MostrarReactivos
-// Este componente muestra una lista de reactivos químicos con opciones de filtrado y búsqueda
 const MostrarReactivos = () => {
-  // Estados del componente:
-  // - reactivos: Array que almacena la lista de reactivos obtenidos de la API
-  // - clasificaciones: Array de clasificaciones disponibles para filtrar
-  // - filtros: Objeto con los criterios de filtrado actuales (nombre, clasificacion_id, estado)
-  // - cargando: Booleano que indica si se están cargando datos
-  // - reactivoSeleccionado: Objeto del reactivo seleccionado para mostrar en modal
   const [reactivos, setReactivos] = useState([]);
   const [clasificaciones, setClasificaciones] = useState([]);
   const [filtros, setFiltros] = useState({
@@ -36,41 +23,32 @@ const MostrarReactivos = () => {
   const [cargando, setCargando] = useState(true);
   const [reactivoSeleccionado, setReactivoSeleccionado] = useState(null);
 
-  // Código comentado: Hook original para carga inicial (ahora dividido en dos useEffect)
-
-  // Hook useEffect para cargar las clasificaciones al montar el componente
-  // Se ejecuta solo una vez al inicio
-  useEffect(()=>{
-    const cargarClasificaciones=async()=>{
-      try{
+  useEffect(() => {
+    const cargarClasificaciones = async () => {
+      try {
         const data = await obtenerClasificaciones();
         setClasificaciones(data);
-      }catch(error){
-        console.error("Error al cargar clasificaciones ", error);
+      } catch (error) {
+        console.error('Error al cargar clasificaciones ', error);
       }
     };
     cargarClasificaciones();
-  },[]);
+  }, []);
 
-  // Hook useEffect para filtrar reactivos automáticamente cuando cambian los filtros
-  // Se ejecuta cada vez que el estado 'filtros' cambia
   useEffect(() => {
     buscarConFiltros();
   }, [filtros]);
-  // Función comentada: cargarDatosIniciales (reemplazada por hooks separados)
 
-  // Función asíncrona para buscar reactivos aplicando los filtros actuales
-  // Normaliza los filtros y llama a la API, actualizando el estado de reactivos
   const buscarConFiltros = async () => {
     setCargando(true);
     try {
       const filtrosNormalizados = {};
-      if(filtros.nombre.trim())
-        filtrosNormalizados.nombre=filtros.nombre.trim();
-      if(filtros.clasificacion_id)
-        filtrosNormalizados.clasificacion_id=Number(filtros.clasificacion_id);
-      if(filtros.estado)
-        filtrosNormalizados.estado=filtros.estado;
+      if (filtros.nombre.trim())
+        filtrosNormalizados.nombre = filtros.nombre.trim();
+      if (filtros.clasificacion_id)
+        filtrosNormalizados.clasificacion_id = Number(filtros.clasificacion_id);
+      if (filtros.estado)
+        filtrosNormalizados.estado = filtros.estado;
 
       const data = await obtenerReactivos(filtrosNormalizados);
       setReactivos(data);
@@ -81,7 +59,6 @@ const MostrarReactivos = () => {
     }
   };
 
-  // Función para limpiar todos los filtros, restableciendo el estado de filtros a valores vacíos
   const limpiarFiltros = () => {
     setFiltros({
       nombre: '',
@@ -90,39 +67,76 @@ const MostrarReactivos = () => {
     });
   };
 
-  // Renderizado del componente: devuelve el JSX que representa la interfaz de usuario
+  /**
+   * Obtiene el nombre de la clasificación de un reactivo
+   * Busca en múltiples posibles campos donde puede venir el dato
+   */
+  const obtenerNombreClasificacion = (reactivo) => {
+    // Opción 1: viene directo como string en el campo 'clasificacion'
+    if (reactivo.clasificacion && typeof reactivo.clasificacion === 'string')
+      return reactivo.clasificacion;
+
+    // Opción 2: viene como objeto anidado { nombre: '...' }
+    if (reactivo.clasificacion && typeof reactivo.clasificacion === 'object')
+      return reactivo.clasificacion.nombre || '—';
+
+    // Opción 3: viene como 'clasificacion_nombre' (alias de JOIN)
+    if (reactivo.clasificacion_nombre)
+      return reactivo.clasificacion_nombre;
+
+    // Opción 4: buscar por clasificacion_id en el array de clasificaciones
+    if (reactivo.clasificacion_id) {
+      const encontrada = clasificaciones.find(
+        (c) => c.id === reactivo.clasificacion_id
+      );
+      if (encontrada) return encontrada.nombre;
+    }
+
+    return '—';
+  };
+
+  /**
+   * Obtiene el color hex de la clasificación de un reactivo
+   */
+  const obtenerColorClasificacion = (reactivo) => {
+    if (reactivo.color_hex) return reactivo.color_hex;
+
+    if (reactivo.clasificacion && typeof reactivo.clasificacion === 'object')
+      return reactivo.clasificacion.color_hex || '#888';
+
+    if (reactivo.clasificacion_id) {
+      const encontrada = clasificaciones.find(
+        (c) => c.id === reactivo.clasificacion_id
+      );
+      if (encontrada) return encontrada.color_hex || '#888';
+    }
+
+    return '#888';
+  };
+
   return (
-    // Contenedor principal del componente con clases CSS para estilos
     <div className="mostrar-reactivos-container">
-      {/* // Encabezado de la página con título y descripción */}
       <div className="mostrar-header">
         <h1>Inventario de Reactivos</h1>
         <p>Consulta y gestiona todos los reactivos registrados</p>
       </div>
 
-      {/* Sección de filtros para buscar y filtrar reactivos */}
+      {/* Filtros */}
       <div className="filtros-section">
-        {/* // Grid de filtros con inputs para nombre, clasificación, estado y botón de limpiar */}
         <div className="filtros-grid">
-          {/* // Input de texto para filtrar por nombre del reactivo */}
           <input
             type="text"
             placeholder="Buscar por nombre..."
             value={filtros.nombre}
-            onChange={(e) =>
-              setFiltros({ ...filtros, nombre: e.target.value })
-            }
+            onChange={(e) => setFiltros({ ...filtros, nombre: e.target.value })}
           />
 
-          {/* // Select para filtrar por clasificación, mapeando las clasificaciones obtenidas */}
           <select
             value={filtros.clasificacion_id}
             onChange={(e) =>
               setFiltros({
                 ...filtros,
-                clasificacion_id: e.target.value
-                  ? Number(e.target.value)
-                  : ''
+                clasificacion_id: e.target.value ? Number(e.target.value) : ''
               })
             }
           >
@@ -134,114 +148,90 @@ const MostrarReactivos = () => {
             ))}
           </select>
 
-          {/* //Select para filtrar por estado del reactivo (activo o agotado) */}
           <select
             value={filtros.estado}
-            onChange={(e) =>
-              setFiltros({ ...filtros, estado: e.target.value })
-            }
+            onChange={(e) => setFiltros({ ...filtros, estado: e.target.value })}
           >
             <option value="">Todos los estados</option>
             <option value="activo">Activo</option>
             <option value="agotado">Agotado</option>
           </select>
 
-          {/* // Botón para limpiar todos los filtros aplicados */}
           <button onClick={limpiarFiltros} className="btn btn-outline">
             Limpiar
           </button>
         </div>
       </div>
 
-      {/* Sección de listado de reactivos, condicional según estado de carga */}
+      {/* Lista de reactivos */}
       {cargando ? (
-        // Indicador de carga mientras se obtienen los datos
         <div className="loading">
           <div className="spinner"></div>
           <p>Cargando reactivos...</p>
         </div>
       ) : (
-        // Grid de reactivos una vez cargados
         <div className="reactivos-grid">
-          {/* // Mensaje si no hay reactivos que coincidan con los filtros */}
           {reactivos.length === 0 ? (
             <div className="no-resultados">
               <p>No se encontraron reactivos</p>
             </div>
           ) : (
-            // Mapeo de cada reactivo a una tarjeta (card) con información clave
-            reactivos.map((reactivo) => (
-              // Tarjeta individual para cada reactivo, con borde de color según clasificación
-              <div
-                key={reactivo.id}
-                className="reactivo-card"
-                style={{ borderLeftColor: reactivo.color_hex }}
-                onClick={() => setReactivoSeleccionado(reactivo)}
-              >
-                {/* // Encabezado de la tarjeta con nombre y fórmula química si existe */}
-                <div className="reactivo-header">
-                  <h3>{reactivo.nombre}</h3>
-                  {reactivo.formula_quimica && (
-                    <span className="formula">
-                      {reactivo.formula_quimica}
+            reactivos.map((reactivo) => {
+              const colorHex = obtenerColorClasificacion(reactivo);
+              const nombreClasificacion = obtenerNombreClasificacion(reactivo);
+
+              return (
+                <div
+                  key={reactivo.id}
+                  className="reactivo-card"
+                  style={{ borderLeftColor: colorHex }}
+                  onClick={() => setReactivoSeleccionado(reactivo)}
+                >
+                  <div className="reactivo-header">
+                    <h3>{reactivo.nombre}</h3>
+                    {reactivo.formula_quimica && (
+                      <span className="formula">{reactivo.formula_quimica}</span>
+                    )}
+                  </div>
+
+                  <div className="reactivo-info">
+                    <span className="badge" style={{ backgroundColor: colorHex }}>
+                      {nombreClasificacion}
                     </span>
-                  )}
-                </div>
-
-                {/* // Información adicional: badge de clasificación y estado */}
-                <div className="reactivo-info">
-                  <span
-                    className="badge"
-                    style={{ backgroundColor: reactivo.color_hex }}
-                  >
-                    {reactivo.clasificacion}
-                  </span>
-                  <span
-                    className={`estado-badge estado-${reactivo.estado}`}
-                  >
-                    {reactivo.estado}
-                  </span>
-                </div>
-
-                {/* // Detalles del reactivo: cantidad, frascos y ubicación si existe */}
-                <div className="reactivo-detalles">
-                  <div>
-                    <strong>Cantidad:</strong> {reactivo.cantidad_actual}{' '}
-                    {reactivo.unidad_medida}
+                    <span className={`estado-badge estado-${reactivo.estado}`}>
+                      {reactivo.estado}
+                    </span>
                   </div>
-                  <div>
-                    <strong>Frascos:</strong> {reactivo.numero_frascos}
-                  </div>
-                  {reactivo.ubicacion && (
+
+                  <div className="reactivo-detalles">
                     <div>
-                      <strong>Ubicación:</strong> {reactivo.ubicacion}
+                      <strong>Cantidad:</strong> {reactivo.cantidad_actual}{' '}
+                      {reactivo.unidad_medida}
                     </div>
-                  )}
-                </div>
+                    <div>
+                      <strong>Frascos:</strong> {reactivo.numero_frascos}
+                    </div>
+                    {reactivo.ubicacion && (
+                      <div>
+                        <strong>Ubicación:</strong> {reactivo.ubicacion}
+                      </div>
+                    )}
+                  </div>
 
-                {/* // Código QR del reactivo */}
-                <div className="reactivo-codigo">
-                  <code>{reactivo.codigo_qr}</code>
+                  <div className="reactivo-codigo">
+                    <code>{reactivo.codigo_qr}</code>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
 
-      {/* Modal para mostrar detalles del reactivo seleccionado */}
+      {/* Modal */}
       {reactivoSeleccionado && (
-        // Overlay del modal que cierra al hacer clic fuera
-        <div
-          className="modal-overlay"
-          onClick={() => setReactivoSeleccionado(null)}
-        >
-          {/* // Contenido del modal, previene cierre al hacer clic dentro */}
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* // Botón para cerrar el modal */}
+        <div className="modal-overlay" onClick={() => setReactivoSeleccionado(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <button
               className="modal-close"
               onClick={() => setReactivoSeleccionado(null)}
@@ -249,63 +239,49 @@ const MostrarReactivos = () => {
               ✕
             </button>
 
-            {/* // Título del modal con el nombre del reactivo */}
             <h2>{reactivoSeleccionado.nombre}</h2>
 
-            {/* // Cuerpo del modal dividido en QR y información */}
             <div className="modal-body">
-              {/* // Sección del código QR generado */}
+              {/* QR */}
               <div className="modal-qr">
-                <QRCodeSVG
-                  value={reactivoSeleccionado.codigo_qr}
-                  size={150}
-                />
+                <QRCodeSVG value={reactivoSeleccionado.codigo_qr} size={150} />
                 <code>{reactivoSeleccionado.codigo_qr}</code>
               </div>
 
-              {/* // Sección de información detallada del reactivo */}
+              {/* Info */}
               <div className="modal-info">
-                {/* Muestra fórmula química si existe */}
                 {reactivoSeleccionado.formula_quimica && (
                   <p>
-                    <strong>Fórmula:</strong>{' '}
-                    {reactivoSeleccionado.formula_quimica}
+                    <strong>Fórmula:</strong> {reactivoSeleccionado.formula_quimica}
                   </p>
                 )}
-                {/* // Clasificación del reactivo */}
+
+                {/* ← FIX: usa la función helper en lugar de .clasificacion directo */}
                 <p>
                   <strong>Clasificación:</strong>{' '}
-                  {reactivoSeleccionado.clasificacion}
+                  {obtenerNombreClasificacion(reactivoSeleccionado)}
                 </p>
-                {/* // Cantidad actual con unidad de medida */}
+
                 <p>
-                  <strong>Cantidad:</strong>{' '}
-                  {reactivoSeleccionado.cantidad_actual}{' '}
+                  <strong>Cantidad:</strong> {reactivoSeleccionado.cantidad_actual}{' '}
                   {reactivoSeleccionado.unidad_medida}
                 </p>
-                {/* // Número de frascos */}
                 <p>
-                  <strong>Frascos:</strong>{' '}
-                  {reactivoSeleccionado.numero_frascos}
+                  <strong>Frascos:</strong> {reactivoSeleccionado.numero_frascos}
                 </p>
-                {/* // Ubicación si existe */}
                 {reactivoSeleccionado.ubicacion && (
                   <p>
-                    <strong>Ubicación:</strong>{' '}
-                    {reactivoSeleccionado.ubicacion}
+                    <strong>Ubicación:</strong> {reactivoSeleccionado.ubicacion}
                   </p>
                 )}
-                {/* // Observaciones si existen */}
                 {reactivoSeleccionado.observaciones && (
                   <p>
-                    <strong>Observaciones:</strong>{' '}
-                    {reactivoSeleccionado.observaciones}
+                    <strong>Observaciones:</strong> {reactivoSeleccionado.observaciones}
                   </p>
                 )}
               </div>
             </div>
 
-            {/* // Botón para descargar el código QR del reactivo */}
             <button
               className="btn btn-primary"
               onClick={() =>
@@ -324,5 +300,4 @@ const MostrarReactivos = () => {
   );
 };
 
-// Exportación del componente para ser usado en otras partes de la aplicación
 export default MostrarReactivos;

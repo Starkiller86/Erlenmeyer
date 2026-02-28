@@ -15,28 +15,30 @@ import LoginPage from './pages/LoginPage';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* ── Ruta pública: Login ────────────────────────────── */}
-          <Route path="/login" element={<LoginPage />} />
+    <>
+      <AlertaCaducidad/>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* ── Ruta pública: Login ────────────────────────────── */}
+            <Route path="/login" element={<LoginPage />} />
 
-          {/* ── Rutas protegidas: todo el sistema existente ────── */}
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <>
-                  <AlertaCaducidad />
-                  <NavBar />
-                  <AppRoutes />
-                </>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </Router>
-    </AuthProvider>
+            {/* ── Rutas protegidas: todo el sistema existente ────── */}
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <>
+                    <NavBar />
+                    <AppRoutes />
+                  </>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </>
   );
 }
 

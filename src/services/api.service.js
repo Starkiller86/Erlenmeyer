@@ -1,260 +1,254 @@
 // ============================================
-// SERVICIO API PARA REACTIVOS
-// Funciones para comunicación entre frontend y backend
+// SERVICIO DE REACTIVOS - SUPABASE
+// Reemplazo TOTAL del api.service anterior
 // ============================================
 
-/**
- * URL base de la API
- * En desarrollo usa localhost, en producción debe ser la URL del servidor
- */
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-
-/**
- * Función auxiliar para hacer peticiones fetch con manejo de errores
- * @param {string} endpoint - Endpoint de la API
- * @param {Object} options - Opciones para fetch
- * @returns {Promise<Object>} Respuesta de la API
- */
-const fetchAPI = async (endpoint, options = {}) => {
-  try {
-    const url = `${API_BASE_URL}${endpoint}`;
-
-    const token = localStorage.getItem('token');
-
-    const config = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...options.headers,
-      },
-    };
-
-    const response = await fetch(url, config);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Error HTTP: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error en petición API:', error);
-    throw error;
-  }
-};
+import { supabase } from '../config/supabaseClient.js';
 
 // ============================================
-// ENDPOINTS DE CLASIFICACIONES
+// CLASIFICACIONES
 // ============================================
 
-/**
- * Obtiene todas las clasificaciones disponibles
- * @returns {Promise<Array>} Array de clasificaciones
- */
 export const obtenerClasificaciones = async () => {
-  return await fetchAPI('/clasificaciones');
+  const { data, error } = await supabase
+    .from('clasificaciones')
+    .select('*')
+    .order('nombre');
+
+  if (error) throw error;
+  return data;
 };
 
 // ============================================
-// ENDPOINTS DE REACTIVOS
+// REACTIVOS
 // ============================================
 
-/**
- * Registra un nuevo reactivo en el sistema
- * @param {Object} reactivo - Datos del reactivo a registrar
- * @returns {Promise<Object>} Respuesta con el reactivo creado
- */
 export const registrarReactivo = async (reactivo) => {
-  return await fetchAPI('/reactivos', {
-    method: 'POST',
-    body: JSON.stringify(reactivo),
-  });
+  const { data, error } = await supabase
+    .from('reactivos')
+    .insert([reactivo])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
-/**
- * Obtiene todos los reactivos con filtros opcionales
- * @param {Object} filtros - Filtros para la búsqueda
- * @returns {Promise<Array>} Array de reactivos
- */
 export const obtenerReactivos = async (filtros = {}) => {
-  // Construir query string con los filtros
-  const queryParams = new URLSearchParams();
-  
-  if (filtros.nombre && filtros.nombre.trim() !== ''){
-    queryParams.append('nombre', filtros.nombre.trim());
-  } 
-  if (filtros.clasificacion_id !== '' && filtros.clasificacion_id !==null && filtros.clasificacion_id !== undefined){
-    queryParams.append('clasificacion_id', filtros.clasificacion_id);
-  } 
-  if (filtros.estado && filtros.estado !== ''){
-    queryParams.append('estado', filtros.estado);
-  } 
-  
-  const queryString = queryParams.toString();
-  const endpoint = queryString ? `/reactivos?${queryString}` : '/reactivos';
-  console.log('URL generada:', endpoint);
-  return await fetchAPI(endpoint);
-};
+  let query = supabase
+    .from('reactivos')
+    .select(`
+      *,
+      clasificaciones ( id, nombre )
+    `);
 
-/**
- * Obtiene un reactivo por su ID
- * @param {number} id - ID del reactivo
- * @returns {Promise<Object>} Datos del reactivo
- */
+  if (filtros.nombre?.trim()) {
+    query = query.ilike('nombre', `%${filtros.nombre.trim()}%`);
+  }
+
+  if (filtros.clasificacion_id) {
+    query = query.eq('clasificacion_id', filtros.clasificacion_id);
+  }
+
+  if (filtros.estado) {
+    query = query.eq('estado', filtros.estado);
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+};
+export const actualizarCodigoQR = async (id, codigoQR) => {
+  const { data, error } = await supabase
+    .from('reactivos')
+    .update({ codigo_qr: codigoQR })
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
+  return data;
+};
 export const obtenerReactivoPorId = async (id) => {
-  return await fetchAPI(`/reactivos/${id}`);
+  const { data, error } = await supabase
+    .from('reactivos')
+    .select(`
+      *,
+      clasificaciones ( id, nombre )
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
-/**
- * Obtiene un reactivo por su código QR
- * @param {string} codigoQR - Código QR del reactivo
- * @returns {Promise<Object>} Datos del reactivo
- */
 export const obtenerReactivoPorQR = async (codigoQR) => {
-  return await fetchAPI(`/reactivos/qr/${encodeURIComponent(codigoQR)}`);
+  const { data, error } = await supabase
+    .from('reactivos')
+    .select('*')
+    .eq('codigo_qr', codigoQR)
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
-/**
- * Actualiza los datos de un reactivo
- * @param {number} id - ID del reactivo
- * @param {Object} datos - Datos a actualizar
- * @returns {Promise<Object>} Reactivo actualizado
- */
 export const actualizarReactivo = async (id, datos) => {
-  return await fetchAPI(`/reactivos/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(datos),
-  });
+  const { data, error } = await supabase
+    .from('reactivos')
+    .update(datos)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
-/**
- * Actualiza solo la cantidad de un reactivo
- * @param {number} id - ID del reactivo
- * @param {number} nuevaCantidad - Nueva cantidad
- * @returns {Promise<Object>} Respuesta de la actualización
- */
 export const actualizarCantidadReactivo = async (id, nuevaCantidad) => {
-  return await fetchAPI(`/reactivos/${id}/cantidad`, {
-    method: 'PATCH',
-    body: JSON.stringify({ cantidad: nuevaCantidad }),
-  });
+  const { data, error } = await supabase
+    .from('reactivos')
+    .update({ cantidad_actual: nuevaCantidad })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
-/**
- * Elimina un reactivo del sistema
- * @param {number} id - ID del reactivo
- * @returns {Promise<Object>} Respuesta de la eliminación
- */
 export const eliminarReactivo = async (id) => {
-  return await fetchAPI(`/reactivos/${id}`, {
-    method: 'DELETE',
-  });
+  const { error } = await supabase
+    .from('reactivos')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+  return { success: true };
 };
 
 // ============================================
-// ENDPOINTS DE CÓDIGOS QR
+// ESTADÍSTICAS
 // ============================================
 
-/**
- * Genera y descarga la imagen QR de un reactivo
- * @param {string} codigoQR - Código QR del reactivo
- * @returns {Promise<Blob>} Imagen QR como blob
- */
-export const descargarImagenQR = async (codigoQR) => {
-  const url = `${API_BASE_URL}/qr/generar/${encodeURIComponent(codigoQR)}`;
-  
-  const response = await fetch(url);
-  
-  if (!response.ok) {
-    throw new Error('Error al generar código QR');
-  }
-  
-  return await response.blob();
-};
-
-/**
- * Descarga la imagen QR directamente al navegador
- * @param {string} codigoQR - Código QR
- * @param {string} nombreReactivo - Nombre del reactivo (para el nombre del archivo)
- */
-export const descargarQRDirecto = async (codigoQR, nombreReactivo = 'reactivo') => {
-  try {
-    const blob = await descargarImagenQR(codigoQR);
-    
-    // Crear URL temporal para el blob
-    const url = window.URL.createObjectURL(blob);
-    
-    // Crear enlace temporal y hacer click para descargar
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `QR_${nombreReactivo.replace(/\s+/g, '_')}_${codigoQR}.png`;
-    document.body.appendChild(link);
-    link.click();
-    
-    // Limpiar
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-    
-    return { success: true, message: 'QR descargado exitosamente' };
-  } catch (error) {
-    console.error('Error al descargar QR:', error);
-    throw error;
-  }
-};
-
-// ============================================
-// ENDPOINTS DE ESTADÍSTICAS
-// ============================================
-
-/**
- * Obtiene estadísticas generales del inventario
- * @returns {Promise<Object>} Objeto con estadísticas
- */
 export const obtenerEstadisticas = async () => {
-  return await fetchAPI('/estadisticas');
+  const { data, error } = await supabase
+    .rpc('estadisticas_inventario');
+
+  if (error) throw error;
+  return data;
 };
 
 // ============================================
-// ENDPOINTS DE BÚSQUEDA AVANZADA
+// BÚSQUEDA
 // ============================================
 
-/**
- * Busca reactivos por fórmula química
- * @param {string} formula - Fórmula química a buscar
- * @returns {Promise<Array>} Array de reactivos coincidentes
- */
 export const buscarPorFormula = async (formula) => {
-  return await fetchAPI(`/reactivos/buscar/formula?q=${encodeURIComponent(formula)}`);
-};
+  const { data, error } = await supabase
+    .from('reactivos')
+    .select('*')
+    .ilike('formula_quimica', `%${formula}%`);
 
-/**
- * Busca información de fórmula química usando API externa (PubChem)
- * @param {string} nombreReactivo - Nombre del reactivo
- * @returns {Promise<Object>} Información química del reactivo
- */
-export const buscarFormulaQuimica = async (nombreReactivo) => {
-  return await fetchAPI(`/quimica/buscar?nombre=${encodeURIComponent(nombreReactivo)}`);
+  if (error) throw error;
+  return data;
 };
 
 // ============================================
-// UTILIDADES
+// QR (NO SE GENERA EN SUPABASE)
 // ============================================
 
-/**
- * Valida que la conexión con la API esté funcionando
- * @returns {Promise<Object>} Estado de la API
- */
-export const verificarConexionAPI = async () => {
+export const descargarImagenQR = () => {
+  throw new Error('La generación de QR se hace en frontend o backend externo');
+};
+
+export const descargarQRDirecto = () => {
+  throw new Error('La generación de QR se hace en frontend o backend externo');
+};
+
+
+// =======================================
+// BUSCAR POR FORMULA
+// =======================================
+export const buscarFormulaQuimica = async (nombre) => {
+  // TRADUCIR
+  let nombreIngles = nombre;
   try {
-    return await fetchAPI('/health');
-  } catch (error) {
-    return { 
-      status: 'error', 
-      message: 'No se puede conectar con la API',
-      error: error.message 
-    };
+    const tradRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=es&tl=en&dt=t&q=${encodeURIComponent(nombre)}`);
+    const tradJson = await tradRes.json();
+    nombreIngles = tradJson[0][0][0];
+    console.log(`Traducido: "${nombre}" → "${nombreIngles}"`);
+  } catch {
+    console.log('No se pudo traducir');
   }
+
+  // BUSCAR EN PUBCHEM
+  const searchRes = await fetch(
+    `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(nombreIngles)}/property/MolecularFormula,MolecularWeight,IUPACName/JSON`
+  );
+  if (!searchRes.ok) throw new Error('No encontrado');
+  const json = await searchRes.json();
+  const props = json.PropertyTable.Properties[0];
+  const cid = props.CID; 
+
+  // BUSCAR CAS NUMBER
+  let cas_number = '';
+  try {
+    const casRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/synonyms/JSON`);
+    const casJson = await casRes.json();
+    const sinonimos = casJson.InformationList.Information[0].Synonym;
+    cas_number = sinonimos.find(s => /^\d{2,7}-\d{2}-\d$/.test(s)) || '';
+  } catch {}
+
+  // BUSCAR CLASIFICACIÓN GHS
+ // BUSCAR CLASIFICACIÓN GHS
+let clasificacion_codigo = null;
+try {
+  const ghsRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug_view/data/compound/${cid}/JSON?heading=GHS+Classification`);
+  const ghsJson = await ghsRes.json();
+  
+  const pictogramas = [];
+
+  const buscarPictogramas = (obj) => {
+    if (!obj) return;
+    if (Array.isArray(obj)) {
+      obj.forEach(buscarPictogramas);
+    } else if (typeof obj === 'object') {
+      // ✅ Los pictogramas están en Markup[].URL como "GHS05.svg"
+      if (obj.URL && obj.URL.includes('/ghs/GHS')) {
+        const match = obj.URL.match(/GHS\d{2}/);
+        if (match) pictogramas.push(match[0]);
+      }
+      Object.values(obj).forEach(buscarPictogramas);
+    }
+  };
+
+  buscarPictogramas(ghsJson);
+  console.log('Pictogramas encontrados:', pictogramas);
+
+  const prioridad = ['GHS06', 'GHS01', 'GHS05', 'GHS02', 'GHS03', 'GHS08', 'GHS07', 'GHS04', 'GHS09'];
+  clasificacion_codigo = prioridad.find(p => pictogramas.includes(p)) || pictogramas[0] || null;
+  console.log('Clasificación seleccionada:', clasificacion_codigo);
+} catch (e) {
+  console.log('Error GHS:', e.message);
+}
+  
+  return {
+    formula: props.MolecularFormula,
+    peso_molecular: props.MolecularWeight,
+    cas_number,
+    clasificacion_codigo 
+  };
+};
+
+// ============================================
+// SALUD
+// ============================================
+
+export const verificarConexionAPI = async () => {
+  const { error } = await supabase.from('reactivos').select('id').limit(1);
+  return error
+    ? { status: 'error', message: error.message }
+    : { status: 'ok', message: 'Conectado a Supabase' };
 };
 
 export default {
@@ -266,10 +260,7 @@ export default {
   actualizarReactivo,
   actualizarCantidadReactivo,
   eliminarReactivo,
-  descargarImagenQR,
-  descargarQRDirecto,
   obtenerEstadisticas,
   buscarPorFormula,
-  buscarFormulaQuimica,
   verificarConexionAPI,
 };

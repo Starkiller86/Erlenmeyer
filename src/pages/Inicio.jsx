@@ -40,7 +40,7 @@ const Inicio = () => {
   };
   
   return (
-    <div className="inicio-container">
+    <div className="inicio-container my-5">
       {/* Hero Section */}
       <div className="hero-section">
         <div className="hero-content">
