@@ -16,7 +16,7 @@ import LoginPage from './pages/LoginPage';
 function App() {
   return (
     <>
-      <AlertaCaducidad/>
+    
       <AuthProvider>
         <Router>
           <Routes>
@@ -29,6 +29,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <>
+                    <AlertaCaducidad/>
                     <NavBar />
                     <AppRoutes />
                   </>

@@ -115,7 +115,9 @@ const MostrarReactivos = () => {
   };
 
   return (
-    <div className="mostrar-reactivos-container">
+    <div className="mostrar-reactivos-container" style={{
+      marginTop: '80px'
+    }}>
       <div className="mostrar-header">
         <h1>Inventario de Reactivos</h1>
         <p>Consulta y gestiona todos los reactivos registrados</p>
