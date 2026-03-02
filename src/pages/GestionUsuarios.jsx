@@ -91,7 +91,7 @@ export default function GestionUsuarios() {
     const f = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
     return (
-        <div style={{ maxWidth: 860, marginTop: '2.5rem', padding: '2rem 1.5rem',display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+        <div style={{ maxWidth: '100%', marginTop: '2.5rem', padding: '2rem 1.5rem',display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg,#5e35b1,#7b1fa2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
