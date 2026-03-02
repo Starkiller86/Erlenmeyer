@@ -3,7 +3,7 @@
 // Reemplazo TOTAL del api.service anterior
 // ============================================
 
-import { supabase } from '../config/supabaseClient.js';
+import { supabase, SupabaseAdmin} from '../config/supabaseClient.js';
 
 // ============================================
 // CLASIFICACIONES
@@ -213,7 +213,7 @@ try {
     if (Array.isArray(obj)) {
       obj.forEach(buscarPictogramas);
     } else if (typeof obj === 'object') {
-      // ✅ Los pictogramas están en Markup[].URL como "GHS05.svg"
+      
       if (obj.URL && obj.URL.includes('/ghs/GHS')) {
         const match = obj.URL.match(/GHS\d{2}/);
         if (match) pictogramas.push(match[0]);
@@ -240,6 +240,44 @@ try {
   };
 };
 
+// OBTENER TODOS LOS PERFILES 
+
+export const obtenerUsuarios = async () =>{
+  const {data, error} = await supabase
+  .from('perfiles')
+  .select('*')
+  .order('created_at', {ascending: false});
+
+  if(error) throw error;
+  return data;
+};
+
+// ACTUALIZAR PERFIL EXISTENTE
+export const actualizarUsuario = async (id, datos) =>{
+  const {data, error} = await supabase.from('perfiles')
+  .update(datos)
+  .eq('id', id)
+  .select()
+  .single();
+
+  if(error) throw error;
+  return data;
+}
+// CREAR USUARIO
+export const crearUsuario = async ({email, password, nombre_completo, rol}) =>{
+
+    const {data, error} = await supabase.auth.signUp({
+      email, 
+      password,
+      options: {
+        data: { nombre_completo, rol}
+      }
+    });
+
+    if(error) throw error;
+    return data.user;
+}
+
 // ============================================
 // SALUD
 // ============================================
@@ -263,4 +301,7 @@ export default {
   obtenerEstadisticas,
   buscarPorFormula,
   verificarConexionAPI,
+  crearUsuario,
+  obtenerUsuarios,
+  actualizarUsuario
 };

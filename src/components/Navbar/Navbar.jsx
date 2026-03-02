@@ -8,7 +8,7 @@ import { FaUsers } from 'react-icons/fa';
 import './Navbar.css';
 
 const NavBar = () => {
-  const { user, logout } = useAuth();
+  const { user, logout , perfil} = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -68,7 +68,7 @@ const NavBar = () => {
                   <span className="nav-user-label">
                     <FaUserCircle size={14} />
                     {user.nombre_completo?.split(' ')[0] || user.username}
-                    {user.rol === 'admin' && <span className="nav-rol-badge">Admin</span>}
+                    {perfil?.rol === 'admin' && <span className="nav-rol-badge">Admin</span>}
                   </span>
                 )}
                 <button className="btn btn-logout" onClick={handleLogout}>
@@ -77,7 +77,7 @@ const NavBar = () => {
               </div>
 
               {/* Solo visible para admins */}
-              {user?.rol === 'admin' && (
+              {perfil?.rol === 'admin' && (
                 <Nav.Link as={Link} to="/usuarios" className="btn btn-solicitud">
                   <FaUsers size={16} /> Gestión de Usuarios
                 </Nav.Link>

@@ -522,7 +522,7 @@ const FormularioReactivo = () => {
           {/* Sección: Información Adicional (Opcional) */}
           <div className="seccion-formulario seccion-opcional">
             <h2>
-              Información Adicional (Opcional)
+              Información Adicional 
               <span className="badge-opcional">Opcional</span>
             </h2>
 
@@ -546,7 +546,7 @@ const FormularioReactivo = () => {
                   id="fecha_caducidad"
                   name="fecha_caducidad"
                   value={formData.fecha_caducidad}
-                  onChange={handleChange}
+                  onChange={handleChange} required
                 />
               </div>
             </div>
