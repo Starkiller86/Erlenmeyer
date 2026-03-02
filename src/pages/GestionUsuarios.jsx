@@ -78,7 +78,7 @@ export default function GestionUsuarios() {
     };
 
     const handleDelete = async (u) => {
-        if (!confirm(`¿Desactivar al usuario "${u.username}"?`)) return;
+        if (!confirm(`¿Desactivar al usuario "${u.nombre_completo}"?`)) return;
         try {
             await actualizarUsuario(u.id, {activo: false}); //LO DESACTIVA
             showMsg('success', 'Usuario desactivado.');
