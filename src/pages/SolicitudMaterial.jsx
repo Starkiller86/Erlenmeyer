@@ -1,7 +1,6 @@
 // src/pages/SolicitudMaterial.jsx
 // Página de solicitud de préstamo de material - integrada en y_app_reactivos
 // Usa el mismo estilo visual (morado/dark) del proyecto existente
-// ✅ MIGRADO: usa Supabase directamente (eliminado localhost:3001)
 
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -85,7 +84,7 @@ const generarPDF = async (request) => {
 // ── Componente principal ───────────────────────────────────────────────────
 const STATUS = {
   pendiente: { label: 'Pendiente', cls: 'badge-pendiente' },
-  aprobado:  { label: 'Aprobado',  cls: 'badge-aprobado'  },
+  aprobado: { label: 'Aprobado', cls: 'badge-aprobado' },
   rechazado: { label: 'Rechazado', cls: 'badge-rechazado' },
 };
 
@@ -101,11 +100,22 @@ export default function SolicitudMaterial() {
   const [requests, setRequests] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [scheduleStart, setScheduleStar] = useState('');
+  const [scheduleEnd, setScheduleEnd] = useState('');
+
+  // Enviar o no la solicitud
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+
 
   const showMsg = (type, text) => {
     setMsg({ type, text });
     setTimeout(() => setMsg(null), 4000);
   };
+
+  // ------------- FORMATEAR FECHA CON UN FORMATO----------------------
+
+  // Función para formatear horario con un formato predeterminado
 
   // ── Cargar solicitudes desde Supabase ──────────────────────────────────
   const loadRequests = async (admin = false) => {
@@ -133,14 +143,14 @@ export default function SolicitudMaterial() {
 
   const handleTabChange = (t) => {
     setTab(t);
-    if (t === 'mis')   loadRequests(false);
+    if (t === 'mis') loadRequests(false);
     if (t === 'admin') loadRequests(true);
   };
 
   const updateField = (k, v) => setForm(p => ({ ...p, [k]: v }));
-  const updateMat   = (i, k, v) => setMaterials(p => p.map((m, j) => j === i ? { ...m, [k]: v } : m));
-  const addMat      = () => setMaterials(p => [...p, emptyMaterial()]);
-  const removeMat   = (i) => setMaterials(p => p.filter((_, j) => j !== i));
+  const updateMat = (i, k, v) => setMaterials(p => p.map((m, j) => j === i ? { ...m, [k]: v } : m));
+  const addMat = () => setMaterials(p => [...p, emptyMaterial()]);
+  const removeMat = (i) => setMaterials(p => p.filter((_, j) => j !== i));
 
   // ── Enviar nueva solicitud a Supabase ──────────────────────────────────
   const handleSubmit = async (e) => {
@@ -151,12 +161,13 @@ export default function SolicitudMaterial() {
     }
     setLoading(true);
     try {
+      const { s_hI, s_mI, s_pI, s_hF, s_mF, s_pF, ...formData } = form;
       const { error } = await supabase
         .from('loan_requests')
         .insert([{
           user_id: user.id,
           user_nombre_completo: user.nombre_completo,
-          ...form,
+          ...formData,
           materials,  // se guarda como JSONB
           status: 'pendiente',
           request_date: new Date().toISOString().split('T')[0],
@@ -167,6 +178,8 @@ export default function SolicitudMaterial() {
 
       showMsg('success', '¡Solicitud enviada correctamente!');
       setForm({ practice_name: '', subject: '', group_name: '', schedule: '', practice_date: '' });
+      setScheduleStar('');
+      setScheduleEnd('');
       setMaterials([emptyMaterial()]);
     } catch (err) {
       showMsg('danger', err.message);
@@ -249,7 +262,17 @@ export default function SolicitudMaterial() {
                 </div>
                 <div className="sol-field">
                   <label>Horario</label>
-                  <input value={form.schedule} onChange={e => updateField('schedule', e.target.value)} required placeholder="Ej: 13:00-15:00" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <input type="time" value={scheduleStart} onChange={e => {
+                      setScheduleStart(e.target.value); {/* ✅ corregido typo: setScheduleStar → setScheduleStart */ }
+                      updateField('schedule', `${e.target.value}-${scheduleEnd}`);
+                    }} required style={{ flex: 1 }} />
+                    <span style={{ color: '#aaa', fontWeight: 600 }}>—</span>
+                    <input type="time" value={scheduleEnd} onChange={e => {
+                      setScheduleEnd(e.target.value);
+                      updateField('schedule', `${scheduleStart}-${e.target.value}`); {/* ✅ corregido: scheduleStart en lugar de scheduleEnd */ }
+                    }} required style={{ flex: 1 }} />
+                  </div>
                 </div>
                 <div className="sol-field">
                   <label>Fecha de práctica</label>
@@ -299,14 +322,38 @@ export default function SolicitudMaterial() {
           </div>
 
           <div className="sol-actions">
-            <button type="submit" className="sol-btn-submit" disabled={loading}>
-              {loading ? <span className="spinner-border spinner-border-sm me-2" /> : <FaPaperPlane size={13} />}
-              {loading ? 'Enviando...' : 'Enviar Solicitud'}
+            <button type="button" className="sol-btn-submit" disabled={loading} onClick={() => setConfirmOpen(true)}>
+              <FaPaperPlane size={13} /> Enviar Solicitud
             </button>
           </div>
+
         </form>
       )}
-
+      {confirmOpen && (
+        <div className="sol-modal-overlay" onClick={() => setConfirmOpen(false)}>
+          <div className="sol-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '380px' }}>
+            <div className="sol-modal-header">
+              <span>Confirmar envío</span>
+              <button onClick={() => setConfirmOpen(false)}>✕</button>
+            </div>
+            <div className="sol-modal-body" style={{ textAlign: 'center', padding: '1.5rem' }}>
+              <FaPaperPlane size={28} style={{ color: 'var(--primary, #a78bfa)', marginBottom: '1rem' }} />
+              <p style={{ marginBottom: '1.5rem' }}>
+                ¿Estás seguro de que deseas enviar la solicitud para la práctica <strong>{form.practice_name}</strong>?
+              </p>
+              <div className="sol-modal-actions">
+                <button className="sol-btn-approve" disabled={loading} onClick={() => { setConfirmOpen(false); handleSubmit(); }}>
+                  {loading ? <span className="spinner-border spinner-border-sm me-2" /> : <FaPaperPlane size={12} />}
+                  {loading ? 'Enviando...' : ' Confirmar'}
+                </button>
+                <button className="sol-btn-eye" onClick={() => setConfirmOpen(false)}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* ════════════════ TAB: MIS SOLICITUDES ═══════════════════════ */}
       {tab === 'mis' && (
         <div className="sol-list">
@@ -355,7 +402,7 @@ export default function SolicitudMaterial() {
                 {req.status === 'pendiente' && (
                   <>
                     <button className="sol-btn-approve" onClick={() => handleStatus(req.id, 'aprobado')}>Aprobar</button>
-                    <button className="sol-btn-reject"  onClick={() => handleStatus(req.id, 'rechazado')}>Rechazar</button>
+                    <button className="sol-btn-reject" onClick={() => handleStatus(req.id, 'rechazado')}>Rechazar</button>
                   </>
                 )}
                 {req.status === 'aprobado' && (
@@ -380,13 +427,13 @@ export default function SolicitudMaterial() {
             <div className="sol-modal-body">
               <div className="sol-detail-grid">
                 {[
-                  ['Solicitante',    selected.user_nombre_completo],
-                  ['Práctica',       selected.practice_name],
-                  ['Asignatura',     selected.subject],
-                  ['Grupo',          selected.group_name],
-                  ['Horario',        selected.schedule],
+                  ['Solicitante', selected.user_nombre_completo],
+                  ['Práctica', selected.practice_name],
+                  ['Asignatura', selected.subject],
+                  ['Grupo', selected.group_name],
+                  ['Horario', selected.schedule],
                   ['Fecha práctica', selected.practice_date],
-                  ['Fecha solicitud',selected.request_date],
+                  ['Fecha solicitud', selected.request_date],
                   ['Estado', <span className={`sol-badge ${STATUS[selected.status]?.cls}`}>{STATUS[selected.status]?.label}</span>],
                 ].map(([k, v]) => (
                   <div key={k} className="sol-detail-item">
@@ -411,13 +458,27 @@ export default function SolicitudMaterial() {
               <div className="sol-modal-actions">
                 {selected.status === 'pendiente' && (
                   <>
-                    <button className="sol-btn-approve" onClick={() => handleStatus(selected.id, 'aprobado')}>Aprobar</button>
-                    <button className="sol-btn-reject"  onClick={() => handleStatus(selected.id, 'rechazado')}>Rechazar</button>
+                    <button className="sol-btn-approve" onClick={() => handleStatus(selected.id, 'aprobado')}>
+                       Aprobar
+                    </button>
+                    <button className="sol-btn-reject" onClick={() => handleStatus(selected.id, 'rechazado')}>
+                      Rechazar
+                    </button>
                   </>
                 )}
                 {selected.status === 'aprobado' && (
-                  <button className="sol-btn-pdf" onClick={() => generarPDF(selected)}>
-                    <FaFilePdf size={12} /> Descargar PDF
+                  <>
+                    <button className="sol-btn-reject" onClick={() => handleStatus(selected.id, 'rechazado')}>
+                       Cambiar a Rechazado
+                    </button>
+                    <button className="sol-btn-pdf" onClick={() => generarPDF(selected)}>
+                      <FaFilePdf size={12} /> Descargar PDF
+                    </button>
+                  </>
+                )}
+                {selected.status === 'rechazado' && (
+                  <button className="sol-btn-approve" onClick={() => handleStatus(selected.id, 'aprobado')}>
+                    Cambiar a Aprobado
                   </button>
                 )}
                 <button className="sol-btn-eye" onClick={() => setSelected(null)}>Cerrar</button>

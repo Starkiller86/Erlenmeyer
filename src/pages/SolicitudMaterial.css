@@ -48,7 +48,7 @@
   z-index: 9999;
   min-width: 280px;
   max-width: 380px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 /* ── Tabs ───────────────────────────────────────────────────────────── */
@@ -77,7 +77,7 @@
 .solicitud-tabs button.active {
   background: linear-gradient(135deg, #5e35b1, #7b1fa2);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(94,53,177,0.3);
+  box-shadow: 0 2px 8px rgba(94, 53, 177, 0.3);
 }
 
 /* ── Cards del formulario ───────────────────────────────────────────── */
@@ -87,7 +87,7 @@
   border-radius: 12px;
   margin-bottom: 1rem;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(94,53,177,0.06);
+  box-shadow: 0 2px 8px rgba(94, 53, 177, 0.06);
 }
 
 .sol-card-header {
@@ -137,7 +137,7 @@
 
 .sol-field input:focus {
   border-color: #7b1fa2;
-  box-shadow: 0 0 0 3px rgba(94,53,177,0.12);
+  box-shadow: 0 0 0 3px rgba(94, 53, 177, 0.12);
 }
 
 /* ── Fila de material ───────────────────────────────────────────────── */
@@ -158,151 +158,309 @@
   align-items: center;
   gap: 0.35rem;
   padding: 0.35rem 0.8rem;
-  border: 1px solid rgba(255,255,255,0.5);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 6px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   color: #fff;
   font-size: 0.78rem;
   cursor: pointer;
   transition: background 0.15s;
 }
-.sol-btn-add:hover { background: rgba(255,255,255,0.35); }
+
+.sol-btn-add:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
 
 .sol-btn-remove {
-  width: 30px; height: 30px;
+  width: 30px;
+  height: 30px;
   border: 1px solid #fca5a5;
   border-radius: 6px;
   background: #fff;
   color: #ef4444;
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.sol-btn-remove:hover { background: #fef2f2; }
+
+.sol-btn-remove:hover {
+  background: #fef2f2;
+}
 
 .sol-btn-submit {
-  display: flex; align-items: center; gap: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.6rem 1.5rem;
-  border: none; border-radius: 8px;
+  border: none;
+  border-radius: 8px;
   background: linear-gradient(135deg, #5e35b1, #7b1fa2);
-  color: #fff; font-weight: 600; font-size: 0.9rem;
-  cursor: pointer; transition: opacity 0.15s;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
 }
-.sol-btn-submit:hover { opacity: 0.9; }
-.sol-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.sol-actions { margin-top: 0.5rem; }
+.sol-btn-submit:hover {
+  opacity: 0.9;
+}
+
+.sol-btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sol-actions {
+  margin-top: 0.5rem;
+}
 
 /* ── Lista de solicitudes ───────────────────────────────────────────── */
-.sol-list { display: flex; flex-direction: column; gap: 0.625rem; }
+.sol-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
 
-.sol-loading { display: flex; justify-content: center; padding: 3rem; }
+.sol-loading {
+  display: flex;
+  justify-content: center;
+  padding: 3rem;
+}
 
-.sol-empty { text-align: center; color: #6b5a8e; padding: 3rem; background: #f9f7ff; border-radius: 12px; }
+.sol-empty {
+  text-align: center;
+  color: #6b5a8e;
+  padding: 3rem;
+  background: #f9f7ff;
+  border-radius: 12px;
+}
 
 .sol-item {
   background: #fff;
   border: 1px solid #e8e0f5;
   border-radius: 10px;
   padding: 1rem 1.25rem;
-  box-shadow: 0 1px 4px rgba(94,53,177,0.05);
+  box-shadow: 0 1px 4px rgba(94, 53, 177, 0.05);
 }
 
 .sol-item-main {
-  display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 0.4rem;
 }
 
 .sol-item-title {
-  font-weight: 600; font-size: 0.95rem; color: #1a0533;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1a0533;
 }
 
 .sol-item-meta {
-  display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem;
-  font-size: 0.8rem; color: #6b5a8e;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  font-size: 0.8rem;
+  color: #6b5a8e;
 }
 
 .sol-item-actions {
-  display: flex; gap: 0.5rem; margin-top: 0.625rem; flex-wrap: wrap;
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+  flex-wrap: wrap;
 }
 
 /* ── Badges ─────────────────────────────────────────────────────────── */
 .sol-badge {
-  padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
 }
-.badge-pendiente { background: #fff8e1; color: #f59e0b; border: 1px solid #fcd34d; }
-.badge-aprobado  { background: #ecfdf5; color: #10b981; border: 1px solid #6ee7b7; }
-.badge-rechazado { background: #fef2f2; color: #ef4444; border: 1px solid #fca5a5; }
+
+.badge-pendiente {
+  background: #fff8e1;
+  color: #f59e0b;
+  border: 1px solid #fcd34d;
+}
+
+.badge-aprobado {
+  background: #ecfdf5;
+  color: #10b981;
+  border: 1px solid #6ee7b7;
+}
+
+.badge-rechazado {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fca5a5;
+}
 
 /* ── Botones de acción en lista ─────────────────────────────────────── */
 .sol-btn-eye {
-  padding: 0.3rem 0.7rem; border-radius: 6px; font-size: 0.78rem; cursor: pointer;
-  border: 1px solid #d1c4e9; background: #fff; color: #5e35b1;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  border: 1px solid #d1c4e9;
+  background: #fff;
+  color: #5e35b1;
 }
+
 .sol-btn-approve {
-  padding: 0.3rem 0.7rem; border-radius: 6px; font-size: 0.78rem; cursor: pointer;
-  border: 1px solid #6ee7b7; background: #ecfdf5; color: #059669;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  border: 1px solid #6ee7b7;
+  background: #ecfdf5;
+  color: #059669;
 }
+
 .sol-btn-reject {
-  padding: 0.3rem 0.7rem; border-radius: 6px; font-size: 0.78rem; cursor: pointer;
-  border: 1px solid #fca5a5; background: #fef2f2; color: #ef4444;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #ef4444;
 }
+
 .sol-btn-pdf {
-  display: flex; align-items: center; gap: 0.3rem;
-  padding: 0.3rem 0.7rem; border-radius: 6px; font-size: 0.78rem; cursor: pointer;
-  border: 1px solid #a5b4fc; background: #eef2ff; color: #4f46e5;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  border: 1px solid #a5b4fc;
+  background: #eef2ff;
+  color: #4f46e5;
 }
 
 /* ── Modal ──────────────────────────────────────────────────────────── */
 .sol-modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(26,5,51,0.6); backdrop-filter: blur(3px);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 1050; padding: 1rem;
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 5, 51, 0.6);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 1rem;
 }
 
 .sol-modal {
-  background: #fff; border-radius: 14px;
-  width: 100%; max-width: 620px; max-height: 88vh; overflow: auto;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 88vh;
+  overflow: auto;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
 }
 
 .sol-modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem 1.25rem; border-bottom: 1px solid #e8e0f5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e8e0f5;
   background: linear-gradient(135deg, #5e35b1, #7b1fa2);
-  color: #fff; font-weight: 600; border-radius: 14px 14px 0 0;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 14px 14px 0 0;
 }
 
 .sol-modal-header button {
-  border: none; background: rgba(255,255,255,0.2); color: #fff;
-  width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 0.9rem;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.9rem;
 }
 
-.sol-modal-body { padding: 1.25rem; }
+.sol-modal-body {
+  padding: 1.25rem;
+}
 
 .sol-detail-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; margin-bottom: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+  margin-bottom: 1rem;
 }
 
-.sol-detail-item { font-size: 0.83rem; }
-.sol-detail-label { font-weight: 600; color: #374151; display: block; }
-.sol-detail-value { color: #6b5a8e; }
+.sol-detail-item {
+  font-size: 0.83rem;
+}
+
+.sol-detail-label {
+  font-weight: 600;
+  color: #374151;
+  display: block;
+}
+
+.sol-detail-value {
+  color: #6b5a8e;
+}
 
 /* ── Tabla modal ────────────────────────────────────────────────────── */
 .sol-table {
-  width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 1rem;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
 }
-.sol-table th {
-  background: #f3f0ff; padding: 0.4rem 0.625rem;
-  border: 1px solid #e8e0f5; color: #374151; font-weight: 600; text-align: left;
-}
-.sol-table td { padding: 0.4rem 0.625rem; border: 1px solid #e8e0f5; color: #4b5563; }
 
-.sol-modal-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.sol-table th {
+  background: #f3f0ff;
+  padding: 0.4rem 0.625rem;
+  border: 1px solid #e8e0f5;
+  color: #374151;
+  font-weight: 600;
+  text-align: left;
+}
+
+.sol-table td {
+  padding: 0.4rem 0.625rem;
+  border: 1px solid #e8e0f5;
+  color: #4b5563;
+}
+
+.sol-modal-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
 
 /* ── Responsive ─────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .sol-material-row { flex-wrap: wrap; }
-  .sol-detail-grid { grid-template-columns: 1fr; }
-  .solicitud-tabs { width: 100%; }
-  .solicitud-tabs button { flex: 1; text-align: center; }
-}
+  .sol-material-row {
+    flex-wrap: wrap;
+  }
+
+  .sol-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .solicitud-tabs {
+    width: 100%;
+  }
+
+  .solicitud-tabs button {
+    flex: 1;
+    text-align: center;
+  }
+} 
