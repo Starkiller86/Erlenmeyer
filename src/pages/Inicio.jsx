@@ -9,6 +9,11 @@ import { obtenerEstadisticas } from '../services/api.service';
 import { FaPlus, FaList, FaQrcode, FaFlask } from 'react-icons/fa';
 import './Inicio.css';
 
+// PARA LAS NOTIFICACIONES
+import { useNotificaciones } from '../components/FormularioReactivo/Notificaciones/NotificacionesMaterial';
+import ModalNuevaSolicitud from '../components/FormularioReactivo/Notificaciones/ModalNotificación';
+import { useAuth } from '../context/AuthContext';
+
 /**
  * Componente de página de inicio
  * Muestra información general y accesos rápidos
@@ -16,15 +21,24 @@ import './Inicio.css';
 const Inicio = () => {
   // Estado para las estadísticas
   const [estadisticas, setEstadisticas] = useState(null);
+  const { user, perfil, isAdmin } = useAuth();
   const [cargando, setCargando] = useState(true);
-  
+  const { nuevaSolicitud, showModal, setShowModal, totalPendientes } = useNotificaciones(perfil?.rol);
+  console.log('Usuario:', user);
+  console.log('🆔 user.id:', user?.id);
+  console.log('Rol:', user?.rol);
+  console.log('perfil:', perfil);
+  console.log('isAdmin:', isAdmin);
+  console.log('showModal:', showModal);
+  console.log('nuevaSolicitud:', nuevaSolicitud);
+
   /**
    * Efecto para cargar estadísticas al montar el componente
    */
   useEffect(() => {
     cargarEstadisticas();
   }, []);
-  
+
   /**
    * Carga las estadísticas del inventario
    */
@@ -38,7 +52,7 @@ const Inicio = () => {
       setCargando(false);
     }
   };
-  
+
   return (
     <div className="inicio-container my-5">
       {/* Hero Section */}
@@ -50,11 +64,11 @@ const Inicio = () => {
           <p>Universidad Tecnológica de Querétaro</p>
         </div>
       </div>
-      
+
       {/* Tarjetas de acceso rápido */}
       <div className="accesos-rapidos">
         <h2>Accesos Rápidos</h2>
-        
+
         <div className="cards-grid">
           {/* Tarjeta: Alta de Reactivos */}
           <Link to="/alta" className="card card-primary">
@@ -64,7 +78,7 @@ const Inicio = () => {
             <h3>Registrar Reactivo</h3>
             <p>Da de alta un nuevo reactivo químico en el inventario con su código QR único</p>
           </Link>
-          
+
           {/* Tarjeta: Mostrar Reactivos */}
           <Link to="/mostrar" className="card card-secondary">
             <div className="card-icon">
@@ -73,7 +87,7 @@ const Inicio = () => {
             <h3>Ver Inventario</h3>
             <p>Consulta todos los reactivos registrados con filtros y búsqueda avanzada</p>
           </Link>
-          
+
           {/* Tarjeta: Lector QR */}
           <Link to="/lector" className="card card-accent">
             <div className="card-icon">
@@ -84,23 +98,23 @@ const Inicio = () => {
           </Link>
         </div>
       </div>
-      
+
       {/* Estadísticas */}
       {!cargando && estadisticas && (
         <div className="estadisticas-section">
           <h2>Estadísticas del Inventario</h2>
-          
+
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-value">{estadisticas.totalReactivos || 0}</div>
               <div className="stat-label">Total de Reactivos</div>
             </div>
-            
+
             <div className="stat-card stat-warning">
               <div className="stat-value">{estadisticas.alertasStockBajo || 0}</div>
               <div className="stat-label">Stock Bajo</div>
             </div>
-            
+
             <div className="stat-card stat-danger">
               <div className="stat-value">{estadisticas.proximosACaducar || 0}</div>
               <div className="stat-label">Próximos a Caducar</div>
@@ -108,7 +122,7 @@ const Inicio = () => {
           </div>
         </div>
       )}
-      
+
       {/* Footer */}
       <div className="footer-section">
         <p>
@@ -116,6 +130,15 @@ const Inicio = () => {
           Universidad Tecnológica de Querétaro - 2026
         </p>
       </div>
+
+      {/* Modal */}
+      {showModal && (
+        <ModalNuevaSolicitud
+          solicitud={nuevaSolicitud}
+          totalpendientes={totalPendientes}
+          onClose={() => setShowModal(false)}
+        />
+      )}
     </div>
   );
 };

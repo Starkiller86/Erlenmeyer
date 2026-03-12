@@ -435,6 +435,16 @@ const FormularioReactivo = () => {
                   placeholder="Ej: 7664-93-9"
                 />
               </div>
+               <div className="form-group">
+                <label htmlFor="fecha_caducidad">Fecha de Caducidad</label>
+                <input
+                  type="date"
+                  id="fecha_caducidad"
+                  name="fecha_caducidad"
+                  value={formData.fecha_caducidad}
+                  onChange={handleChange} required
+                />
+              </div>
             </div>
           </div>
 
@@ -539,16 +549,7 @@ const FormularioReactivo = () => {
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="fecha_caducidad">Fecha de Caducidad</label>
-                <input
-                  type="date"
-                  id="fecha_caducidad"
-                  name="fecha_caducidad"
-                  value={formData.fecha_caducidad}
-                  onChange={handleChange} required
-                />
-              </div>
+             
             </div>
 
             <div className="form-row">
