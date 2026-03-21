@@ -206,7 +206,7 @@ export default function SolicitudMaterial() {
     });
     const data=await res.json();
     if(!res.ok) throw new Error(data.error);
-    showMsg('sucess', `Solicitud${status}`);
+    showMsg('sucess', `Estado de solicitud: ${status}`);
     //refrescar lista
     loadRequests(true);
     //actualizar moda si esta abierto
