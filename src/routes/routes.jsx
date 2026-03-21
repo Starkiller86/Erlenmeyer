@@ -10,6 +10,7 @@ import MostrarReactivos from '../pages/MostrarReactivo';
 import LectorQR from '../pages/LectorQR';
 import SolicitudMaterial from '../pages/SolicitudMaterial'; // ← NUEVO
 import GestionUsuarios from '../pages/GestionUsuarios';
+import AltaMaterial from '../pages/AltaMaterial';
 
 const AppRoutes = () => {
   return (
@@ -20,6 +21,7 @@ const AppRoutes = () => {
       <Route path="/lector" element={<LectorQR />} />
       <Route path="/solicitud-material" element={<SolicitudMaterial />} /> {/* ← NUEVO */}
       <Route path="/usuarios" element={<GestionUsuarios />} />
+      <Route path="/altamat" element={<AltaMaterial/>}></Route>
     </Routes>
   );
 };

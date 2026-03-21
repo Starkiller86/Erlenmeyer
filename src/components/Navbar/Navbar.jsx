@@ -66,6 +66,10 @@ const NavBar = () => {
                   <FaPlus size={16} /> Alta de Reactivos
                 </Nav.Link>
 
+                <Nav.Link as={Link} to="/altamat" className="btn">
+                  <FaPlus size={16} /> Alta de Material
+                </Nav.Link>
+
                 <Nav.Link as={Link} to="/mostrar" className="btn">
                   <FaList size={16} /> Mostrar Reactivos
                 </Nav.Link>

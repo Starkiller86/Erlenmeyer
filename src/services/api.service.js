@@ -289,6 +289,42 @@ export const verificarConexionAPI = async () => {
     : { status: 'ok', message: 'Conectado a Supabase' };
 };
 
+//Materiales
+export const registrarMaterial = async (material) => {
+  const { data, error } = await supabase
+    .from('Materiales')
+    .insert([material])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const obtenerMateriales = async (filtros = {}) => {
+  let query = supabase.from('Materiales').select('*');
+
+  if (filtros.nombre?.trim()) {
+    query = query.ilike('nombre', `%${filtros.nombre.trim()}%`);
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+};
+
+export const actualizarMaterial = async (id, datos) => {
+  const { data, error } = await supabase
+    .from('Materiales')
+    .update(datos)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
 export default {
   obtenerClasificaciones,
   registrarReactivo,
@@ -303,5 +339,8 @@ export default {
   verificarConexionAPI,
   crearUsuario,
   obtenerUsuarios,
-  actualizarUsuario
+  actualizarUsuario,
+  registrarMaterial,
+  obtenerMateriales,
+  actualizarMaterial
 };
