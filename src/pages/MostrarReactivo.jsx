@@ -7,10 +7,12 @@ import React, { useState, useEffect } from 'react';
 import {
   obtenerReactivos,
   obtenerClasificaciones,
-  descargarQRDirecto
+  descargarQRDirecto, 
+  actualizarReactivo
 } from '../services/api.service';
 import { QRCodeSVG } from 'qrcode.react';
 import './MostrarReactivo.css';
+import { useAsyncError } from 'react-router-dom';
 
 const MostrarReactivos = () => {
   const [reactivos, setReactivos] = useState([]);
@@ -22,7 +24,9 @@ const MostrarReactivos = () => {
   });
   const [cargando, setCargando] = useState(true);
   const [reactivoSeleccionado, setReactivoSeleccionado] = useState(null);
-
+  const[reactivoEditar, setReactivoEditar]=useState(null);
+  const [formData, setFormData]=useState({});
+  const [guardando, setGuardando]=useState(false);
   useEffect(() => {
     const cargarClasificaciones = async () => {
       try {
@@ -112,6 +116,44 @@ const MostrarReactivos = () => {
     }
 
     return '#888';
+  };
+
+  const abrirFormularioEdicion=(reactivo)=>{
+    setFormData({
+      nombre: reactivo.nombre || '',
+      formula_quimica:reactivo.formula_quimica || '',
+      clasificacion_id:reactivo.clasificacion_id || '',
+      cantidad_actual:reactivo.cantidad_actual || 0,
+      unidad_medida:reactivo.unidad_medida || 'ml',
+      numero_frascos:reactivo.numero_frascos || 1,
+      ubicacion:reactivo.ubicacion || '',
+      observaciones:reactivo.observaciones || '',
+      estado:reactivo.estado || 'activo'
+    });
+    setReactivoSeleccionado(null);
+    setReactivoEditar(reactivo);
+  };
+
+  const handleGuardarCambios=async(e)=>{
+    e.preventDefault();
+    setGuardando(true);
+    try{
+      const datosActualizar={
+        ...formData,
+        cantidad_actual:parseFloat(formData.cantidad_actual),
+        numero_frascos:parseInt(formData.numero_frascos),
+        clasificacion_id:parseInt(formData.clasificacion_id)
+      };
+      await actualizarReactivo(reactivoEditar.id, datosActualizar);
+      buscarConFiltros();
+      setReactivoEditar(null);
+      alert('Reactivo actualizado correctamente');
+    }catch(error){
+      console.error('Error al actualizar:', error);
+      alert('Hubo un error al actualizar el reactivo: '+error.message);
+    }finally{
+      setGuardando(false);
+    }
   };
 
   return (
@@ -295,6 +337,76 @@ const MostrarReactivos = () => {
             >
               Descargar QR
             </button>
+            <button
+            className='btn btn-outline my-2'
+            onClick={()=>
+              abrirFormularioEdicion(reactivoSeleccionado)
+            }
+            >Editar reactivo</button>
+          </div>
+        </div>
+      )}
+      {reactivoEditar &&(
+        <div className='modal-overlay' onClick={()=>setReactivoEditar(null)}>
+          <div className='modal-content' onClick={(e)=>e.stopPropagation()} style={{maxWidth:'500px'}}>
+            <button className='modal-close' onClick={()=>setReactivoEditar(null)}>X</button>
+            <h2>Editar: {reactivoEditar.nombre}</h2>
+            <form onSubmit={handleGuardarCambios} style={{display:'flex',flexDirection:'column', gap:'1rem', marginTop:'1.5rem' }}>
+              <div>
+                <label>Nombre:</label>
+                <input type='text' value={formData.nombre} onChange={e=>setFormData({...formData, nombre:e.target.value})} required style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #12054e', background: '#fff', color: '#000'}}></input>
+              </div>
+              <div style={{display:'flex', gap:'1rem'}}>
+                <div style={{flex:1}}>
+                  <label>Formula</label>
+                  <input type='text' value={formData.formula_quimica} onChange={e=>setFormData({...formData, formula_quimica:e.target.value})} required style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #12054e', background: '#fff', color: '#000'}}></input>
+                </div>
+                <div style={{display:'flex', gap:'1rem'}}>
+                  <label>Clasificacion</label>
+                  <select value={formData.clasificacion_id} onChange={e=>setFormData({...formData, clasificacion_id:e.target.value})} required style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #12054e', background: '#fff', color: '#000'}}>
+                    {clasificaciones.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{display:'flex', gap:'1rem'}}>
+                <div style={{flex:1}}>
+                  <label>Cantidad</label>
+                  <input type='number' step='any' value={formData.cantidad_actual} onChange={e=>setFormData({...formData, cantidad_actual:e.target.value})} required style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #12054e', background: '#fff', color: '#000'}}></input>
+                </div>
+                <div style={{flex:1}}>
+                  <label>Unidad</label>
+                  <input type='text' value={formData.unidad_medida} onChange={e=>setFormData({...formData, unidad_medida: e.target.value})} required style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #12054e', background: '#fff', color: '#000'}}></input>
+                </div>
+                <div style={{flex:1}}>
+                  <label>Frascos</label>
+                  <input type='number' value={formData.numero_frascos} onChange={e=>setFormData({...formData, numero_frascos:e.target.value})} required style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #12054e', background: '#fff', color: '#000'}}></input>
+                </div>
+              </div>
+              <div style={{display:'flex',gap:'1rem'}}>
+                <div style={{flex:1}}>
+                  <label>Estado</label>
+                  <select value={formData.estado} onChange={e=>setFormData({...formData, estado:e.target.value})} style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #12054e', background: '#fff', color: '#000'}}>
+                    <option value='activo'>Activo</option>
+                    <option value='agotado'>Agotado</option>
+                    <option value='suspendido'>Suspendido</option>
+                    <option value='caducado'>Caducado</option>
+                  </select>
+                </div>
+                <div style={{flex:1}}>
+                  <label>Ubicacion</label>
+                  <input type='text' value={formData.ubicacion} onChange={e=>setFormData({...formData, ubicacion:e.target.value})} style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #12054e', background: '#fff', color: '#000'}}></input>
+                </div>
+              </div>
+              <div>
+                <label>Observaciones</label>
+                <textarea value={formData.observaciones} onChange={e=>setFormData({...formData, observaciones:e.target.value})} style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #12054e', background: '#fff', color: '#000'}}></textarea>
+                <button type='submit' disabled={guardando} className='btn btn-primary' style={{flex:1}}>
+                  {guardando? 'Guardando...' : 'Guardar cambios'}
+                </button>
+                <button type='button' onClick={()=>setReactivoEditar(null)} className='btn btn-outline' style={{flex:1}}>Cancelar</button>
+              </div>
+              <div style={{display:'flex', gap:'1rem', marginTop:'1rem'}}></div>
+            </form>
           </div>
         </div>
       )}

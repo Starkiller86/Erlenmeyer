@@ -103,7 +103,7 @@ export default function SolicitudMaterial() {
   const [scheduleStart, setScheduleStart] = useState('');
   const [scheduleEnd, setScheduleEnd] = useState(''); 
   const[inventario, setInventario]=useState([]);
-
+  const[filtroFecha, setFiltroFecha]=useState('');
   // Enviar o no la solicitud
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -246,6 +246,10 @@ export default function SolicitudMaterial() {
     cargarInventario();
   },[]);
 
+  const filtrarSolicitudes=requests.filter(req=>{
+    if(!filtroFecha) return true;
+    return req.practice_date===filtroFecha;
+  });
   return (
     <div className="solicitud-page" style={{ marginTop: '80px' }}>
       {/* ── Encabezado ─────────────────────────────────────────────── */}
@@ -280,6 +284,18 @@ export default function SolicitudMaterial() {
           </button>
         )}
       </div>
+      {/*Filtro de fecha */}
+      {(tab==='mis' || tab==='admin')&&(
+        <div style={{display:'flex', gap:'1rem', alignItems:'flex-end', marginBottom: '1.5rem', background: '#070757', padding: '1rem', borderRadius: '8px'}}>
+          <div className='sol-field' style={{flex:1, margin:0}}>
+            <label style={{fontSize:'0.85rem', color:'#fff',marginBottom: '0.4rem', display: 'block'}}>
+              Filtrar por fecha de practica
+            </label>
+            <input type='date' value={filtroFecha} onChange={(e)=>setFiltroFecha(e.target.value)} style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #fff', background: '#fff', color: '#000'}}></input>
+          </div>
+          <button type='button' className='sol-btn-eye' onClick={()=>setFiltroFecha('')}>Limpiar filtro</button>
+        </div>
+      )}
 
       {/* ════════════════ TAB: NUEVA SOLICITUD ════════════════════════ */}
       {tab === 'nueva' && (
@@ -421,9 +437,9 @@ export default function SolicitudMaterial() {
         <div className="sol-list">
           {loadingList ? (
             <div className="sol-loading"><div className="spinner-border text-light" /></div>
-          ) : requests.length === 0 ? (
+          ) : filtrarSolicitudes.length === 0 ? (
             <div className="sol-empty">No tienes solicitudes registradas.</div>
-          ) : requests.map(req => (
+          ) : filtrarSolicitudes.map(req => (
             <div key={req.id} className="sol-item">
               <div className="sol-item-main">
                 <span className="sol-item-title">{req.practice_name}</span>
@@ -445,9 +461,9 @@ export default function SolicitudMaterial() {
         <div className="sol-list">
           {loadingList ? (
             <div className="sol-loading"><div className="spinner-border text-light" /></div>
-          ) : requests.length === 0 ? (
+          ) : filtrarSolicitudes.length === 0 ? (
             <div className="sol-empty">No hay solicitudes.</div>
-          ) : requests.map(req => (
+          ) : filtrarSolicitudes.map(req => (
             <div key={req.id} className="sol-item">
               <div className="sol-item-main">
                 <span className="sol-item-title">{req.practice_name}</span>
