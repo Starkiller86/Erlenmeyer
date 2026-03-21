@@ -2,13 +2,13 @@
 // Página de solicitud de préstamo de material - integrada en y_app_reactivos
 // Usa el mismo estilo visual (morado/dark) del proyecto existente
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../config/supabaseClient.js';
 import { FaPlus, FaTrash, FaFilePdf, FaPaperPlane, FaClipboardList } from 'react-icons/fa';
 import './SolicitudMaterial.css';
 
-const emptyMaterial = () => ({ cantidad: 1, unidad: 'pza', material_name: '', observaciones: '' });
+const emptyMaterial = () => ({ cantidad: 1, unidad: 'pza', material_id:'', material_name: '', observaciones: '' });
 
 // ── Generación de PDF ──────────────────────────────────────────────────────
 const generarPDF = async (request) => {
@@ -89,7 +89,7 @@ const STATUS = {
 };
 
 export default function SolicitudMaterial() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, token } = useAuth();
   const [tab, setTab] = useState('nueva');
   const [form, setForm] = useState({
     practice_name: '', subject: '', group_name: '', schedule: '', practice_date: ''
@@ -100,8 +100,9 @@ export default function SolicitudMaterial() {
   const [requests, setRequests] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
   const [selected, setSelected] = useState(null);
-  const [scheduleStart, setScheduleStar] = useState('');
-  const [scheduleEnd, setScheduleEnd] = useState('');
+  const [scheduleStart, setScheduleStart] = useState('');
+  const [scheduleEnd, setScheduleEnd] = useState(''); 
+  const[inventario, setInventario]=useState([]);
 
   // Enviar o no la solicitud
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -154,7 +155,7 @@ export default function SolicitudMaterial() {
 
   // ── Enviar nueva solicitud a Supabase ──────────────────────────────────
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if(e) e.preventDefault();
     if (materials.some(m => !m.material_name.trim())) {
       showMsg('warning', 'Todos los materiales deben tener nombre.');
       return;
@@ -178,7 +179,7 @@ export default function SolicitudMaterial() {
 
       showMsg('success', '¡Solicitud enviada correctamente!');
       setForm({ practice_name: '', subject: '', group_name: '', schedule: '', practice_date: '' });
-      setScheduleStar('');
+      setScheduleStart('');
       setScheduleEnd('');
       setMaterials([emptyMaterial()]);
     } catch (err) {
@@ -187,24 +188,63 @@ export default function SolicitudMaterial() {
       setLoading(false);
     }
   };
-
+  const getToken=async()=>{
+    const {data}=await supabase.auth.getSession();
+    return data.session?.access_token;
+  };
   // ── Cambiar estado de una solicitud (admin) ────────────────────────────
   const handleStatus = async (id, status) => {
-    try {
-      const { error } = await supabase
-        .from('loan_requests')
-        .update({ status })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      showMsg('success', `Solicitud ${status}`);
-      loadRequests(true);
-      if (selected?.id === id) setSelected(p => ({ ...p, status }));
-    } catch (err) {
+    try{
+      const token=await getToken();
+    const res=await fetch(`http://localhost:3001/api/solicitudes/${id}/status`,{
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        Authorization:`Bearer ${token}`
+      },
+      body:JSON.stringify({status})
+    });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error);
+    showMsg('sucess', `Solicitud${status}`);
+    //refrescar lista
+    loadRequests(true);
+    //actualizar moda si esta abierto
+    if(selected?.id===id){
+      setSelected(prev=>({...prev, status}));
+    }}catch(err){
       showMsg('danger', err.message);
     }
-  };
+    // try {
+    //   const { error } = await supabase
+    //     .from('loan_requests')
+    //     .update({ status })
+    //     .eq('id', id);
+
+    //   if (error) throw error;
+
+    //   showMsg('success', `Solicitud ${status}`);
+    //   loadRequests(true);
+    //   if (selected?.id === id) setSelected(p => ({ ...p, status }));
+    // } catch (err) {
+    //   showMsg('danger', err.message);
+    // }
+  }
+
+  //Cargar el inventario
+  useEffect(()=>{
+    const cargarInventario=async() =>{
+      const{data, error} = await supabase
+      .from('reactivos')
+      .select('id, nombre, cantidad_actual')
+      .gt('cantidad_actual', 0)
+      if(!error){
+        setInventario(data);
+      }
+    };
+
+    cargarInventario();
+  },[]);
 
   return (
     <div className="solicitud-page" style={{ marginTop: '80px' }}>
@@ -295,7 +335,7 @@ export default function SolicitudMaterial() {
                 <div key={idx} className="sol-material-row">
                   <div className="sol-field" style={{ flex: '0 0 70px' }}>
                     <label>Cant.</label>
-                    <input type="number" min={1} value={mat.cantidad} onChange={e => updateMat(idx, 'cantidad', parseInt(e.target.value) || 1)} />
+                    <input type="number" min={1} value={mat.cantidad} onChange={e => updateMat(idx, 'cantidad', parseInt(e.target.value))} />
                   </div>
                   <div className="sol-field" style={{ flex: '0 0 80px' }}>
                     <label>Unidad</label>
@@ -303,7 +343,29 @@ export default function SolicitudMaterial() {
                   </div>
                   <div className="sol-field" style={{ flex: 1 }}>
                     <label>Equipo / Material</label>
-                    <input value={mat.material_name} onChange={e => updateMat(idx, 'material_name', e.target.value)} required placeholder="Ej: Tubos de ensayo" />
+                    <select
+                      value={mat.material_id}
+                      onChange={e=>{
+                        const valorSeleccionado=e.target.value;
+                        if(!valorSeleccionado){
+                          updateMat(idx, 'material_id','');
+                          updateMat(idx, 'material_name','');
+                          return;
+                        }
+                        const selectedItem=inventario.find(i=>i.id==valorSeleccionado);
+                        updateMat(idx, 'material_id', selectedItem.id);
+                        updateMat(idx, 'material_name', selectedItem.nombre);
+                      }}
+                      required
+                    >
+                      <option value="">Seleccionar material</option>
+                      {inventario.map(item=>(
+                        <option key={item.id} value={item.id}>
+                          {item.nombre}
+                        </option>
+                      ))}
+                    </select>
+
                   </div>
                   <div className="sol-field" style={{ flex: '0 0 160px' }}>
                     <label>Observaciones</label>

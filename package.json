@@ -8,11 +8,11 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "node server.js",
-    "server:dev": "nodemon server.js",
+    "server:dev": "nodemon backend/server.js",
     "start": "concurrently \"npm run server:dev\" \"npm run dev\""
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.98.0",
+    "@supabase/supabase-js": "^2.99.1",
     "bcrypt": "^6.0.0",
     "bootstrap": "^5.3.8",
     "cors": "^2.8.6",
@@ -23,7 +23,7 @@
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.563.0",
-    "mysql2": "^3.16.3",
+    "mysql2": "^3.19.1",
     "pdfkit": "^0.17.2",
     "qrcode": "^1.5.3",
     "qrcode.react": "^3.1.0",

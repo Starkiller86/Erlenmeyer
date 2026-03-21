@@ -28,23 +28,42 @@ app.use(express.static('public'));
 // AUTH MIDDLEWARES
 // ============================================
 
-function verifyToken(req, res, next) {
+async function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: 'No autorizado' });
 
   const token = authHeader.split(' ')[1];
-  try {
-    req.user = jwt.verify(token, 'CLAVE_SUPER_SECRETA');
-    next();
-  } catch {
-    return res.status(401).json({ error: 'Token inválido' });
-  }
+  const{data, error}=await supabase.auth.getUser(token);
+  if(error || !data.user)
+    return res.status(401).json({error:'Token invalido'});
+  req.user=data.user;
+  next();
+  // try {
+  //   req.user = jwt.verify(token, 'CLAVE_SUPER_SECRETA');
+  //   next();
+  // } catch {
+  //   return res.status(401).json({ error: 'Token inválido' });
+  // }
 }
 
-function onlyAdmin(req, res, next) {
-  if (req.user.rol !== 'admin')
-    return res.status(403).json({ error: 'Solo administradores' });
-  next();
+async function onlyAdmin(req, res, next) {
+  console.log("1. Objeto de usuario extraído del token:", req.user);
+  const userEmail=req.user.email;
+  console.log("2. Buscando en la tabla 'usuarios' el correo:", userEmail);
+  const{data:user, error}=await supabase
+    .from('perfiles')
+    .select('*')
+    .eq('email', userEmail)
+    .single();
+    console.log("3. Resultado de la base de datos:", error || user);
+    if(error || !user)
+      return res.status(403).json({error:"Perfil no encontrado"});
+    if(user.rol !== 'admin')
+      return res.status(403).json({error:'Solo administradores'});
+    next();
+  // if (req.user.rol !== 'admin')
+  //   return res.status(403).json({ error: 'Solo administradores' });
+  // next();
 }
 
 // ============================================
@@ -192,7 +211,56 @@ app.get('/api/alertas/caducidad', async (req, res) => {
   res.json(data);
 });
 
+//CAMBIAR ESTADO DE SOLICITUD
 
+app.put('/api/solicitudes/:id/status', verifyToken, onlyAdmin, async(req,res)=>{
+  const {status} =req.body;
+  const solicitudId=parseInt(req.params.id);
+
+  try{
+    //Obtener solicitud
+    const{data:solicitud, error}=await supabase
+      .from('loan_requests')
+      .select('*')
+      .eq('id', solicitudId)
+      .single();
+    if (error || !solicitud) return res.status(404).json({error:'Solicitud no encontrada'})
+    //Si es aprobada descontar del inventario
+    if(status==='aprobado'){
+      for(const mat of solicitud.materials){
+        const idBuscado=mat.material_id || mat.material_name;
+        const cantidadSolicitada=parseFloat(mat.cantidad);
+        //buscar material en inventario
+        const{data:reactivo, error:reactivoError}=await supabase
+        .from('reactivos')
+        .select('*')
+        .eq('id', idBuscado)
+        .single();
+        if(reactivoError) throw reactivoError;
+        if(!reactivo) return res.status(400).json({error:`Material no encontrado:${idBuscado}`})
+        
+        const nuevoStock=reactivo.cantidad_actual-cantidadSolicitada;
+        if(nuevoStock<0) return res.status(400).json({error:`Stock insuficiente para ${mat.material_name}`});
+          //Actualizar inventario
+          await supabase
+            .from('reactivos')
+            .update({cantidad_actual: nuevoStock})
+            .eq('id',reactivo.id);
+          console.log("Descontando:", mat.material_name, mat.cantidad)
+      }
+    }
+    //Actualizar estado de la solicitud
+    const {error:updateError}=await supabase
+      .from('loan_requests')
+      .update({status})
+      .eq('id', solicitudId);
+    if(updateError) throw updateError;
+    res.json({success:true});
+  }catch(err){
+    console.error(err);
+    res.status(500).json({error:err.message});
+  }
+});
 // ============================================
 // HEALTH
 // ============================================

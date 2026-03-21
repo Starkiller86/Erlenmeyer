@@ -1,6 +1,8 @@
 // BACKEND/CONFIG/DATABASE.CONFIG.JS
 
-import 'dotenv/config';
+// import 'dotenv/config';
+import dotenv from "dotenv";
+dotenv.config({ path: "./backend/.env" });
 import { createClient } from '@supabase/supabase-js';
 
 export const supabase = createClient(
