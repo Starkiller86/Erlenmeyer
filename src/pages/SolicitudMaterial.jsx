@@ -234,12 +234,30 @@ export default function SolicitudMaterial() {
   //Cargar el inventario
   useEffect(()=>{
     const cargarInventario=async() =>{
-      const{data, error} = await supabase
+      const{data:reactivos, error:errorR} = await supabase
       .from('reactivos')
-      .select('id, nombre, cantidad_actual')
-      .gt('cantidad_actual', 0)
-      if(!error){
-        setInventario(data);
+      .select('id, nombre, numero_frascos')
+      .gt('numero_frascos', 0);
+
+    const{data:materiales, error:errorM}=await supabase
+      .from('Materiales')
+      .select('id, nombre, cantidad')
+      .gt('cantidad',0);
+      if(!errorR && !errorM){
+        const reactivosFormateados=(reactivos || []).map(r=>({
+          id_unico:`R-${r.id}`,
+          db_id:r.id,
+          nombre:`[Reactivo] ${r.nombre} (Disp:${r.numero_frascos} frascos)`,
+          tipo:'reactivo'
+        }));
+
+        const materialesFormateados=(materiales || []).map(m=>({
+          id_unico:`M-${m.id}`,
+          db_id:m.id,
+          nombre:`[Material] ${m.nombre} (Disp: ${m.cantidad} pzas)`,
+          tipo:'material'
+        }));
+        setInventario([...reactivosFormateados, ...materialesFormateados]);
       }
     };
 
@@ -360,23 +378,26 @@ export default function SolicitudMaterial() {
                   <div className="sol-field" style={{ flex: 1 }}>
                     <label>Equipo / Material</label>
                     <select
-                      value={mat.material_id}
+                      value={mat.material_id ? `${mat.tipo==='reactivo' ? 'R' :'M'}-${mat.material_id}` : ''}
                       onChange={e=>{
                         const valorSeleccionado=e.target.value;
                         if(!valorSeleccionado){
                           updateMat(idx, 'material_id','');
                           updateMat(idx, 'material_name','');
+                          updateMat(idx, 'tipo','');
                           return;
                         }
-                        const selectedItem=inventario.find(i=>i.id==valorSeleccionado);
-                        updateMat(idx, 'material_id', selectedItem.id);
+                        const selectedItem=inventario.find(i=>i.id_unico===valorSeleccionado);
+                        updateMat(idx, 'material_id', selectedItem.db_id);
                         updateMat(idx, 'material_name', selectedItem.nombre);
+                        updateMat(idx, 'tipo', selectedItem.tipo);
                       }}
                       required
+                      style={{ width: '100%', padding: '8px', borderRadius: '4px' }}
                     >
-                      <option value="">Seleccionar material</option>
+                      <option value="">Seleccionar reactivos o material</option>
                       {inventario.map(item=>(
-                        <option key={item.id} value={item.id}>
+                        <option key={item.id_unico} value={item.id_unico}>
                           {item.nombre}
                         </option>
                       ))}
