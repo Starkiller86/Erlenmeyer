@@ -118,7 +118,7 @@ const STATUS = {
 
 // ── Componente principal ───────────────────────────────────────────────────
 export default function SolicitudMaterial() {
-  const { user, isAdmin, perfil } = useAuth(); 
+  const { user, isAdmin, perfil } = useAuth();
 
   const [tab, setTab] = useState('nueva');
   const [form, setForm] = useState({
@@ -137,7 +137,7 @@ export default function SolicitudMaterial() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [devolucionOpen, setDevolucionOpen] = useState(false);
   const [devolucionForm, setDevolucionForm] = useState([]);
-  const [nuevasIds, setNuevasIds] = useState(new Set());
+  const [nuevasIds, setNuevasIds] = useState([]);
   const showMsg = (type, text) => {
     setMsg({ type, text });
     setTimeout(() => setMsg(null), 4000);
@@ -319,14 +319,11 @@ export default function SolicitudMaterial() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'loan_requests' },
         (payload) => {
+          console.log(' Nueva solicitud recibida:', payload.new);
           setRequests(prev => [payload.new, ...prev]);
-          setNuevasIds(prev => new Set([...prev, payload.new.id]));
+          setNuevasIds(prev => [...prev, payload.new.id]);
           setTimeout(() => {
-            setNuevasIds(prev => {
-              const next = new Set(prev);
-              next.delete(payload.new.id);
-              return next;
-            });
+            setNuevasIds(prev => prev.filter(id => id !== payload.new.id));
           }, 3000);
         }
       )
@@ -517,7 +514,7 @@ export default function SolicitudMaterial() {
           ) : filtrarSolicitudes.length === 0 ? (
             <div className="sol-empty">No tienes solicitudes registradas.</div>
           ) : filtrarSolicitudes.map(req => (
-            <div key={req.id} className={`sol-item ${nuevasIds.has(req.id) ? 'sol-item-nueva' : ''}`}>
+            <div key={req.id} className={`sol-item ${nuevasIds.includes(req.id) ? 'sol-item-nueva' : ''}`}>
               <div className="sol-item-main">
                 <span className="sol-item-title">{req.practice_name}</span>
                 <span className={`sol-badge ${STATUS[req.status]?.cls}`}>{STATUS[req.status]?.label}</span>
