@@ -2,7 +2,7 @@
 
 // import 'dotenv/config';
 import dotenv from "dotenv";
-dotenv.config({ path: "./backend/.env" });
+dotenv.config({ path: "./.env" });
 import { createClient } from '@supabase/supabase-js';
 
 export const supabase = createClient(

@@ -1,14 +1,11 @@
 // src/pages/SolicitudMaterial.jsx
-// Página de solicitud de préstamo de material - integrada en y_app_reactivos
-// Usa el mismo estilo visual (morado/dark) del proyecto existente
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../config/supabaseClient.js';
 import { FaPlus, FaTrash, FaFilePdf, FaPaperPlane, FaClipboardList } from 'react-icons/fa';
 import './SolicitudMaterial.css';
 
-const emptyMaterial = () => ({ cantidad: 1, unidad: 'pza', material_id:'', material_name: '', observaciones: '' });
+const emptyMaterial = () => ({ cantidad: 1, unidad: 'pza', material_id: '', material_name: '', tipo: '', observaciones: '' });
 
 // ── Generación de PDF ──────────────────────────────────────────────────────
 const generarPDF = async (request) => {
@@ -26,30 +23,52 @@ const generarPDF = async (request) => {
   doc.setFontSize(9);
   doc.text('SUBDIRECCIÓN DE LABORATORIOS', W / 2, 32, { align: 'center' });
   doc.setFontSize(7); doc.setFont('helvetica', 'normal');
-  doc.text('EA-F-13', W - M, 15); doc.text('Rev. 01', W - M, 19); doc.text('Fecha: 31-may-2021', W - M, 23);
+  doc.text('EA-F-13', W - M, 15, { align: 'right' });
+  doc.text('Rev. 01', W - M, 19, { align: 'right' });
+  doc.text('Fecha: 31-may-2021', W - M, 23, { align: 'right' });
+
+  // Helper para imprimir label + valor
+  const f = (label, value, lx, vx, yy) => {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
+    doc.text(label, lx, yy);
+    doc.setFont('helvetica', 'normal');
+    doc.text(String(value || ''), vx, yy);
+  };
 
   let y = 40;
-  const f = (label, value, lx, vx, yy) => {
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.text(label, lx, yy);
-    doc.setFont('helvetica', 'normal'); doc.text(value || '', vx, yy);
-  };
-  f('FOLIO:', `#${request.id}`, M, 40, y); y += 7;
-  f('FECHA DE SOLICITUD:', request.request_date, M, 55, y);
-  f('HORA:', request.request_time, W / 2 + 10, W / 2 + 42, y); y += 7;
+  f('FOLIO:', `#${request.id}`, M, 35, y); y += 7;
+
+  //  Fecha y hora en la misma línea —
+  f('FECHA DE SOLICITUD:', String(request.request_date || ''), M, 58, y);
+  f('HORA:', String(request.request_time || ''), 120, 133, y); y += 7;
+
   f('LABORATORIO:', 'Laboratorio de Nanotecnología', M, 45, y); y += 7;
-  f('NOMBRE DE LA PRÁCTICA:', request.practice_name, M, 70, y); y += 7;
-  f('ASIGNATURA:', request.subject, M, 40, y); y += 7;
-  f('GRUPO:', request.group_name, M, 35, y);
-  f('HORARIO:', request.schedule, 80, 105, y);
-  f('FECHA PRÁCTICA:', request.practice_date, W / 2 + 10, W / 2 + 45, y); y += 10;
+  f('NOMBRE DE LA PRÁCTICA:', String(request.practice_name || ''), M, 72, y); y += 7;
+  f('ASIGNATURA:', String(request.subject || ''), M, 42, y); y += 7;
+
+  //  Grupo, Horario y Fecha práctica — c
+  f('GRUPO:', String(request.group_name || ''), M, 30, y);
+  f('HORARIO:', String(request.schedule || ''), 70, 88, y);
+  f('FECHA PRÁCTICA:', String(request.practice_date || ''), 128, 158, y); y += 10;
 
   doc.setFontSize(7); doc.setFont('helvetica', 'bold');
   doc.text('LLENAR DE ACUERDO AL TIPO DE USUARIO', W / 2, y, { align: 'center' }); y += 7;
+
   f('Docente:', 'Dr. Juan Enrique Serrano', M, 30, y); y += 7;
-  f('Usuario:', request.user_nombre_completo || '', M, 30, y); y += 5;
+  f('Usuario:', String(request.user_nombre_completo || ''), M, 30, y); y += 5;
+
+  // Limpiar el nombre del material (quitar " (Disp:X frascos/pzas)")
+  const limpiarNombre = (nombre) => {
+    return (nombre || '').replace(/\s*\(Disp:?.*?\)/gi, '').replace(/^\[(Reactivo|Material)\]\s*/i, '').trim();
+  };
 
   const tableData = (request.materials || []).map((m, i) => [
-    i + 1, m.cantidad, m.unidad, m.material_name, '', '', m.observaciones || '',
+    i + 1,
+    m.cantidad,
+    m.unidad,
+    limpiarNombre(m.material_name),
+    '', '',
+    m.observaciones || '',
   ]);
   while (tableData.length < 25) tableData.push(['', '', '', '', '', '', '']);
 
@@ -61,9 +80,13 @@ const generarPDF = async (request) => {
     styles: { fontSize: 7, cellPadding: 1.5, lineColor: [0, 0, 0], lineWidth: 0.2 },
     headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center', fontSize: 6 },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center' }, 1: { cellWidth: 18, halign: 'center' },
-      2: { cellWidth: 18, halign: 'center' }, 3: { cellWidth: 70 },
-      4: { cellWidth: 10, halign: 'center' }, 5: { cellWidth: 10, halign: 'center' }, 6: { cellWidth: 40 },
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 18, halign: 'center' },
+      2: { cellWidth: 18, halign: 'center' },
+      3: { cellWidth: 70 },
+      4: { cellWidth: 10, halign: 'center' },
+      5: { cellWidth: 10, halign: 'center' },
+      6: { cellWidth: 40 },
     },
     margin: { left: M, right: M },
   });
@@ -72,25 +95,31 @@ const generarPDF = async (request) => {
   doc.line(M, sigY + 2, M + 50, sigY + 2);
   doc.setFontSize(8); doc.setFont('helvetica', 'bold');
   doc.text('Nombre', M + 25, sigY + 7, { align: 'center' });
-  doc.setFont('helvetica', 'normal'); doc.text('Profesor Responsable', M + 25, sigY + 12, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.text('Profesor Responsable', M + 25, sigY + 12, { align: 'center' });
+
   const rc = W - M - 25;
   doc.line(W - M - 50, sigY + 2, W - M, sigY + 2);
-  doc.setFont('helvetica', 'bold'); doc.text('Nombre', rc, sigY + 7, { align: 'center' });
-  doc.setFont('helvetica', 'normal'); doc.text('Laboratorista', rc, sigY + 12, { align: 'center' });
+  doc.setFont('helvetica', 'bold');
+  doc.text('Nombre', rc, sigY + 7, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.text('Laboratorista', rc, sigY + 12, { align: 'center' });
 
   doc.save(`vale_prestamo_${request.id}.pdf`);
 };
 
-// ── Componente principal ───────────────────────────────────────────────────
+// ── Status config ──────────────────────────────────────────────────────────
 const STATUS = {
   pendiente: { label: 'Pendiente', cls: 'badge-pendiente' },
   aprobado: { label: 'Aprobado', cls: 'badge-aprobado' },
   rechazado: { label: 'Rechazado', cls: 'badge-rechazado' },
-  finalizado:{label:'Finalizado', cls:'badge-finalizado'},
+  finalizado: { label: 'Finalizado', cls: 'badge-finalizado' },
 };
 
+// ── Componente principal ───────────────────────────────────────────────────
 export default function SolicitudMaterial() {
-  const { user, isAdmin, token } = useAuth();
+  const { user, isAdmin, perfil } = useAuth(); 
+
   const [tab, setTab] = useState('nueva');
   const [form, setForm] = useState({
     practice_name: '', subject: '', group_name: '', schedule: '', practice_date: ''
@@ -102,26 +131,19 @@ export default function SolicitudMaterial() {
   const [loadingList, setLoadingList] = useState(false);
   const [selected, setSelected] = useState(null);
   const [scheduleStart, setScheduleStart] = useState('');
-  const [scheduleEnd, setScheduleEnd] = useState(''); 
-  const[inventario, setInventario]=useState([]);
-  const[filtroFecha, setFiltroFecha]=useState('');
-  // Enviar o no la solicitud
+  const [scheduleEnd, setScheduleEnd] = useState('');
+  const [inventario, setInventario] = useState([]);
+  const [filtroFecha, setFiltroFecha] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const[devolucionOpen, setDevolucionOpen]=useState(false);
-  const[devolucionForm, setDevolucionForm]=useState([]);
-
-
-
+  const [devolucionOpen, setDevolucionOpen] = useState(false);
+  const [devolucionForm, setDevolucionForm] = useState([]);
+  const [nuevasIds, setNuevasIds] = useState(new Set());
   const showMsg = (type, text) => {
     setMsg({ type, text });
     setTimeout(() => setMsg(null), 4000);
   };
 
-  // ------------- FORMATEAR FECHA CON UN FORMATO----------------------
-
-  // Función para formatear horario con un formato predeterminado
-
-  // ── Cargar solicitudes desde Supabase ──────────────────────────────────
+  // ── Cargar solicitudes ─────────────────────────────────────────────────
   const loadRequests = async (admin = false) => {
     setLoadingList(true);
     try {
@@ -129,12 +151,7 @@ export default function SolicitudMaterial() {
         .from('loan_requests')
         .select('*')
         .order('created_at', { ascending: false });
-
-      // Si no es admin, filtrar solo las del usuario actual
-      if (!admin) {
-        query = query.eq('user_id', user.id);
-      }
-
+      if (!admin) query = query.eq('user_id', user.id);
       const { data, error } = await query;
       if (error) throw error;
       setRequests(data);
@@ -156,30 +173,28 @@ export default function SolicitudMaterial() {
   const addMat = () => setMaterials(p => [...p, emptyMaterial()]);
   const removeMat = (i) => setMaterials(p => p.filter((_, j) => j !== i));
 
-  // ── Enviar nueva solicitud a Supabase ──────────────────────────────────
+  // ── Enviar solicitud ───────────────────────────────────────────────────
   const handleSubmit = async (e) => {
-    if(e) e.preventDefault();
+    if (e) e.preventDefault();
     if (materials.some(m => !m.material_name.trim())) {
       showMsg('warning', 'Todos los materiales deben tener nombre.');
       return;
     }
     setLoading(true);
     try {
-      const { s_hI, s_mI, s_pI, s_hF, s_mF, s_pF, ...formData } = form;
       const { error } = await supabase
         .from('loan_requests')
         .insert([{
           user_id: user.id,
-          user_nombre_completo: user.nombre_completo,
-          ...formData,
-          materials,  // se guarda como JSONB
+          user_nombre_completo: perfil?.nombre_completo || user?.email, // ✅ corregido
+          ...form,
+          materials,
           status: 'pendiente',
           request_date: new Date().toISOString().split('T')[0],
           request_time: new Date().toTimeString().split(' ')[0],
         }]);
 
       if (error) throw error;
-
       showMsg('success', '¡Solicitud enviada correctamente!');
       setForm({ practice_name: '', subject: '', group_name: '', schedule: '', practice_date: '' });
       setScheduleStart('');
@@ -191,178 +206,194 @@ export default function SolicitudMaterial() {
       setLoading(false);
     }
   };
-  const getToken=async()=>{
-    const {data}=await supabase.auth.getSession();
+
+  const getToken = async () => {
+    const { data } = await supabase.auth.getSession();
     return data.session?.access_token;
   };
-  // ── Cambiar estado de una solicitud (admin) ────────────────────────────
+
+  // ── Cambiar estado ─────────────────────────────────────────────────────
   const handleStatus = async (id, status) => {
-    try{
-      const token=await getToken();
-    const res=await fetch(`http://localhost:3001/api/solicitudes/${id}/status`,{
-      method:'PUT',
-      headers:{
-        'Content-Type':'application/json',
-        Authorization:`Bearer ${token}`
-      },
-      body:JSON.stringify({status})
-    });
-    const data=await res.json();
-    if(!res.ok) throw new Error(data.error);
-    showMsg('sucess', `Estado de solicitud: ${status}`);
-    //refrescar lista
-    loadRequests(true);
-    //actualizar moda si esta abierto
-    if(selected?.id===id){
-      setSelected(prev=>({...prev, status}));
-    }}catch(err){
+    try {
+      const token = await getToken();
+      const res = await fetch(`http://localhost:3001/api/solicitudes/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showMsg('success', `Estado actualizado: ${status}`);
+      loadRequests(true);
+      if (selected?.id === id) setSelected(prev => ({ ...prev, status }));
+    } catch (err) {
       showMsg('danger', err.message);
     }
-    // try {
-    //   const { error } = await supabase
-    //     .from('loan_requests')
-    //     .update({ status })
-    //     .eq('id', id);
+  };
 
-    //   if (error) throw error;
-
-    //   showMsg('success', `Solicitud ${status}`);
-    //   loadRequests(true);
-    //   if (selected?.id === id) setSelected(p => ({ ...p, status }));
-    // } catch (err) {
-    //   showMsg('danger', err.message);
-    // }
-  }
-  const abrirModalDevolucion=(req)=>{
+  // ── Devolución ─────────────────────────────────────────────────────────
+  const abrirModalDevolucion = (req) => {
     setSelected(req);
-    const initialForm=(req.materials || []).map(m=>({
-      material_id:m.material_id,
-      material_name:m.material_name,
-      tipo:m.tipo || 'reactivo',
-      frascos_devueltos:m.cantidad,
-      cantidad_consumida:0,
-      piezas_devueltas:m.cantidad
+    const initialForm = (req.materials || []).map(m => ({
+      material_id: m.material_id,
+      material_name: m.material_name,
+      tipo: m.tipo || 'material',
+      frascos_devueltos: m.cantidad,
+      cantidad_consumida: 0,
+      piezas_devueltas: m.cantidad
     }));
     setDevolucionForm(initialForm);
     setDevolucionOpen(true);
   };
 
-  const updateDevolucion=(idx, field, value)=>{
-    setDevolucionForm(p=>p.map((item,i)=>i===idx ? {...item, [field]:value}:item));
+  const updateDevolucion = (idx, field, value) => {
+    setDevolucionForm(p => p.map((item, i) => i === idx ? { ...item, [field]: value } : item));
   };
 
-  const submitDevolucion=async()=>{
+  const submitDevolucion = async () => {
     setLoading(true);
-    try{
-      const token=await getToken();
-      const res=await fetch(`http://localhost:3001/api/solicitudes/${selected.id}/devolver`,{
-        method:'PUT',
-        headers:{
-          'Content-Type':'application/json',
-          Authorization:`Bearer ${token}`
+    try {
+      const token = await getToken();
+      const res = await fetch(`http://localhost:3001/api/solicitudes/${selected.id}/devolver`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
         },
-        body:JSON.stringify({devoluciones:devolucionForm})
+        body: JSON.stringify({ devoluciones: devolucionForm })
       });
-      const data=await res.json();
-      if(!res.ok) throw new Error(data.error);
-      showMsg('success', 'Devolucion registrada correctamente');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showMsg('success', 'Devolución registrada correctamente');
       setDevolucionOpen(false);
       setSelected(null);
       loadRequests(true);
-    }catch(err){
+    } catch (err) {
       showMsg('danger', err.message);
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
-  //Cargar el inventario
-  useEffect(()=>{
-    const cargarInventario=async() =>{
-      const{data:reactivos, error:errorR} = await supabase
-      .from('reactivos')
-      .select('id, nombre, numero_frascos')
-      .gt('numero_frascos', 0);
 
-    const{data:materiales, error:errorM}=await supabase
-      .from('Materiales')
-      .select('id, nombre, cantidad')
-      .gt('cantidad',0);
-      if(!errorR && !errorM){
-        const reactivosFormateados=(reactivos || []).map(r=>({
-          id_unico:`R-${r.id}`,
-          db_id:r.id,
-          nombre:`[Reactivo] ${r.nombre} (Disp:${r.numero_frascos} frascos)`,
-          tipo:'reactivo'
+  // ── Cargar inventario ──────────────────────────────────────────────────
+  useEffect(() => {
+    const cargarInventario = async () => {
+      const { data: reactivos, error: errorR } = await supabase
+        .from('reactivos')
+        .select('id, nombre, numero_frascos')
+        .gt('numero_frascos', 0);
+
+      const { data: materiales, error: errorM } = await supabase
+        .from('Materiales')
+        .select('id, nombre, cantidad')
+        .gt('cantidad', 0);
+
+      if (!errorR && !errorM) {
+        const reactivosFormateados = (reactivos || []).map(r => ({
+          id_unico: `R-${r.id}`,
+          db_id: r.id,
+          nombre: `[Reactivo] ${r.nombre} (Disp:${r.numero_frascos} frascos)`,
+          tipo: 'reactivo'
         }));
-
-        const materialesFormateados=(materiales || []).map(m=>({
-          id_unico:`M-${m.id}`,
-          db_id:m.id,
-          nombre:`[Material] ${m.nombre} (Disp: ${m.cantidad} pzas)`,
-          tipo:'material'
+        const materialesFormateados = (materiales || []).map(m => ({
+          id_unico: `M-${m.id}`,
+          db_id: m.id,
+          nombre: `[Material] ${m.nombre} (Disp: ${m.cantidad} pzas)`,
+          tipo: 'material'
         }));
         setInventario([...reactivosFormateados, ...materialesFormateados]);
       }
     };
-
     cargarInventario();
-  },[]);
+  }, []);
+  // ── Realtime: solicitudes en vivo (tab admin) ──────────────────────────
+  useEffect(() => {
+    if (tab !== 'admin') return;
 
-  const filtrarSolicitudes=requests.filter(req=>{
-    if(!filtroFecha) return true;
-    return req.practice_date===filtroFecha;
+    const channel = supabase
+      .channel('admin-solicitudes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'loan_requests' },
+        (payload) => {
+          setRequests(prev => [payload.new, ...prev]);
+          setNuevasIds(prev => new Set([...prev, payload.new.id]));
+          setTimeout(() => {
+            setNuevasIds(prev => {
+              const next = new Set(prev);
+              next.delete(payload.new.id);
+              return next;
+            });
+          }, 3000);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'loan_requests' },
+        (payload) => {
+          setRequests(prev =>
+            prev.map(r => r.id === payload.new.id ? payload.new : r)
+          );
+          if (selected?.id === payload.new.id) {
+            setSelected(payload.new);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [tab]); //  se activa/limpia al cambiar de tab
+
+  const filtrarSolicitudes = requests.filter(req => {
+    if (!filtroFecha) return true;
+    return req.practice_date === filtroFecha;
   });
 
+  // ── Render ─────────────────────────────────────────────────────────────
   return (
     <div className="solicitud-page" style={{ marginTop: '80px' }}>
-      {/* ── Encabezado ─────────────────────────────────────────────── */}
+
+      {/* Encabezado */}
       <div className="solicitud-header">
-        <div className="solicitud-header-icon">
-          <FaClipboardList size={22} />
-        </div>
+        <div className="solicitud-header-icon"><FaClipboardList size={22} /></div>
         <div>
           <h1>Solicitud de Material</h1>
-          <p>Laboratorio de Nanotecnología — {user?.nombre_completo}</p>
+          <p>Laboratorio de Nanotecnología — {perfil?.nombre_completo || user?.email}</p>
         </div>
       </div>
 
-      {/* ── Toast ──────────────────────────────────────────────────── */}
-      {msg && (
-        <div className={`solicitud-toast alert alert-${msg.type}`}>
-          {msg.text}
-        </div>
-      )}
+      {/* Toast */}
+      {msg && <div className={`solicitud-toast alert alert-${msg.type}`}>{msg.text}</div>}
 
-      {/* ── Tabs ───────────────────────────────────────────────────── */}
+      {/* Tabs */}
       <div className="solicitud-tabs">
-        <button className={tab === 'nueva' ? 'active' : ''} onClick={() => handleTabChange('nueva')}>
-          Nueva Solicitud
-        </button>
-        <button className={tab === 'mis' ? 'active' : ''} onClick={() => handleTabChange('mis')}>
-          Mis Solicitudes
-        </button>
+        <button className={tab === 'nueva' ? 'active' : ''} onClick={() => handleTabChange('nueva')}>Nueva Solicitud</button>
+        <button className={tab === 'mis' ? 'active' : ''} onClick={() => handleTabChange('mis')}>Mis Solicitudes</button>
         {isAdmin && (
-          <button className={tab === 'admin' ? 'active' : ''} onClick={() => handleTabChange('admin')}>
-            Administrar
-          </button>
+          <button className={tab === 'admin' ? 'active' : ''} onClick={() => handleTabChange('admin')}>Administrar</button>
         )}
       </div>
-      {/*Filtro de fecha */}
-      {(tab==='mis' || tab==='admin')&&(
-        <div style={{display:'flex', gap:'1rem', alignItems:'flex-end', marginBottom: '1.5rem', background: '#070757', padding: '1rem', borderRadius: '8px'}}>
-          <div className='sol-field' style={{flex:1, margin:0}}>
-            <label style={{fontSize:'0.85rem', color:'#fff',marginBottom: '0.4rem', display: 'block'}}>
-              Filtrar por fecha de practica
+
+      {/* Filtro fecha */}
+      {(tab === 'mis' || tab === 'admin') && (
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '1.5rem', background: '#070757', padding: '1rem', borderRadius: '8px' }}>
+          <div className="sol-field" style={{ flex: 1, margin: 0 }}>
+            <label style={{ fontSize: '0.85rem', color: '#fff', marginBottom: '0.4rem', display: 'block' }}>
+              Filtrar por fecha de práctica
             </label>
-            <input type='date' value={filtroFecha} onChange={(e)=>setFiltroFecha(e.target.value)} style={{width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #fff', background: '#fff', color: '#000'}}></input>
+            <input type="date" value={filtroFecha} onChange={e => setFiltroFecha(e.target.value)}
+              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #fff', background: '#fff', color: '#000' }} />
           </div>
-          <button type='button' className='sol-btn-eye' onClick={()=>setFiltroFecha('')}>Limpiar filtro</button>
+          <button type="button" className="sol-btn-eye" onClick={() => setFiltroFecha('')}>Limpiar filtro</button>
         </div>
       )}
 
-      {/* ════════════════ TAB: NUEVA SOLICITUD ════════════════════════ */}
+      {/* ══ TAB: NUEVA SOLICITUD ══ */}
       {tab === 'nueva' && (
-        <form onSubmit={handleSubmit} className="solicitud-form" style={{overflow:'visible'}}>
+        <form onSubmit={handleSubmit} className="solicitud-form" style={{ overflow: 'visible' }}>
           <div className="sol-card">
             <div className="sol-card-header">Datos de la Práctica</div>
             <div className="sol-card-body">
@@ -382,15 +413,9 @@ export default function SolicitudMaterial() {
                 <div className="sol-field">
                   <label>Horario</label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <input type="time" value={scheduleStart} onChange={e => {
-                      setScheduleStart(e.target.value); {/* ✅ corregido typo: setScheduleStar → setScheduleStart */ }
-                      updateField('schedule', `${e.target.value}-${scheduleEnd}`);
-                    }} required style={{ flex: 1 }} />
+                    <input type="time" value={scheduleStart} onChange={e => { setScheduleStart(e.target.value); updateField('schedule', `${e.target.value}-${scheduleEnd}`); }} required style={{ flex: 1 }} />
                     <span style={{ color: '#aaa', fontWeight: 600 }}>—</span>
-                    <input type="time" value={scheduleEnd} onChange={e => {
-                      setScheduleEnd(e.target.value);
-                      updateField('schedule', `${scheduleStart}-${e.target.value}`); {/* ✅ corregido: scheduleStart en lugar de scheduleEnd */ }
-                    }} required style={{ flex: 1 }} />
+                    <input type="time" value={scheduleEnd} onChange={e => { setScheduleEnd(e.target.value); updateField('schedule', `${scheduleStart}-${e.target.value}`); }} required style={{ flex: 1 }} />
                   </div>
                 </div>
                 <div className="sol-field">
@@ -402,12 +427,10 @@ export default function SolicitudMaterial() {
           </div>
 
           {/* Materiales */}
-          <div className="sol-card" style={{overflow:'visible'}}>
+          <div className="sol-card" style={{ overflow: 'visible' }}>
             <div className="sol-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>Materiales Solicitados</span>
-              <button type="button" className="sol-btn-add" onClick={addMat}>
-                <FaPlus size={12} /> Agregar
-              </button>
+              <button type="button" className="sol-btn-add" onClick={addMat}><FaPlus size={12} /> Agregar</button>
             </div>
             <div className="sol-card-body" style={{ overflow: 'visible' }}>
               {materials.map((mat, idx) => (
@@ -420,24 +443,24 @@ export default function SolicitudMaterial() {
                     <label>Unidad</label>
                     <input value={mat.unidad} onChange={e => updateMat(idx, 'unidad', e.target.value)} placeholder="pza" />
                   </div>
-                  <div className="sol-field" style={{ flex: 1, overflow:'visible', minWidth:0}}>
+                  <div className="sol-field" style={{ flex: 1, overflow: 'visible', minWidth: 0 }}>
                     <label>Equipo / Material</label>
                     <BuscadorInventario
-                    inventario={inventario}
-                    valorSeleccionado={mat.material_id ? `${mat.tipo==='reactivo' ? 'R' :'M'}-${mat.material_id}` : ''}
-                      onSelect={(valorSeleccionado)=>{
-                        if(!valorSeleccionado){
-                          updateMat(idx, 'material_id','');
-                          updateMat(idx, 'material_name','');
-                          updateMat(idx, 'tipo','');
+                      inventario={inventario}
+                      valorSeleccionado={mat.material_id ? `${mat.tipo === 'reactivo' ? 'R' : 'M'}-${mat.material_id}` : ''}
+                      onSelect={(valorSeleccionado) => {
+                        if (!valorSeleccionado) {
+                          updateMat(idx, 'material_id', '');
+                          updateMat(idx, 'material_name', '');
+                          updateMat(idx, 'tipo', '');
                           return;
                         }
-                        const selectedItem=inventario.find(i=>i.id_unico===valorSeleccionado);
+                        const selectedItem = inventario.find(i => i.id_unico === valorSeleccionado);
                         updateMat(idx, 'material_id', selectedItem.db_id);
                         updateMat(idx, 'material_name', selectedItem.nombre);
                         updateMat(idx, 'tipo', selectedItem.tipo);
                       }}
-                      />
+                    />
                   </div>
                   <div className="sol-field" style={{ flex: '0 0 160px' }}>
                     <label>Observaciones</label>
@@ -445,9 +468,7 @@ export default function SolicitudMaterial() {
                   </div>
                   <div className="sol-field" style={{ flex: '0 0 36px', marginTop: '1.3rem' }}>
                     {materials.length > 1 && (
-                      <button type="button" className="sol-btn-remove" onClick={() => removeMat(idx)}>
-                        <FaTrash size={12} />
-                      </button>
+                      <button type="button" className="sol-btn-remove" onClick={() => removeMat(idx)}><FaTrash size={12} /></button>
                     )}
                   </div>
                 </div>
@@ -460,9 +481,10 @@ export default function SolicitudMaterial() {
               <FaPaperPlane size={13} /> Enviar Solicitud
             </button>
           </div>
-
         </form>
       )}
+
+      {/* Modal confirmar envío */}
       {confirmOpen && (
         <div className="sol-modal-overlay" onClick={() => setConfirmOpen(false)}>
           <div className="sol-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '380px' }}>
@@ -473,22 +495,21 @@ export default function SolicitudMaterial() {
             <div className="sol-modal-body" style={{ textAlign: 'center', padding: '1.5rem' }}>
               <FaPaperPlane size={28} style={{ color: 'var(--primary, #a78bfa)', marginBottom: '1rem' }} />
               <p style={{ marginBottom: '1.5rem' }}>
-                ¿Estás seguro de que deseas enviar la solicitud para la práctica <strong>{form.practice_name}</strong>?
+                ¿Enviar la solicitud para <strong>{form.practice_name}</strong>?
               </p>
               <div className="sol-modal-actions">
                 <button className="sol-btn-approve" disabled={loading} onClick={() => { setConfirmOpen(false); handleSubmit(); }}>
                   {loading ? <span className="spinner-border spinner-border-sm me-2" /> : <FaPaperPlane size={12} />}
                   {loading ? 'Enviando...' : ' Confirmar'}
                 </button>
-                <button className="sol-btn-eye" onClick={() => setConfirmOpen(false)}>
-                  Cancelar
-                </button>
+                <button className="sol-btn-eye" onClick={() => setConfirmOpen(false)}>Cancelar</button>
               </div>
             </div>
           </div>
         </div>
       )}
-      {/* ════════════════ TAB: MIS SOLICITUDES ═══════════════════════ */}
+
+      {/* ══ TAB: MIS SOLICITUDES ══ */}
       {tab === 'mis' && (
         <div className="sol-list">
           {loadingList ? (
@@ -496,7 +517,7 @@ export default function SolicitudMaterial() {
           ) : filtrarSolicitudes.length === 0 ? (
             <div className="sol-empty">No tienes solicitudes registradas.</div>
           ) : filtrarSolicitudes.map(req => (
-            <div key={req.id} className="sol-item">
+            <div key={req.id} className={`sol-item ${nuevasIds.has(req.id) ? 'sol-item-nueva' : ''}`}>
               <div className="sol-item-main">
                 <span className="sol-item-title">{req.practice_name}</span>
                 <span className={`sol-badge ${STATUS[req.status]?.cls}`}>{STATUS[req.status]?.label}</span>
@@ -512,7 +533,7 @@ export default function SolicitudMaterial() {
         </div>
       )}
 
-      {/* ════════════════ TAB: ADMIN ══════════════════════════════════ */}
+      {/* ══ TAB: ADMIN ══ */}
       {tab === 'admin' && (
         <div className="sol-list">
           {loadingList ? (
@@ -541,13 +562,13 @@ export default function SolicitudMaterial() {
                 )}
                 {req.status === 'aprobado' && (
                   <>
-                  <button className='sol-btn-approve' style={{backgroundColor:'#060c53', color:'#fff', border:'none'}} onClick={()=>abrirModalDevolucion(req)}>
-                    Registrar devolucion
-                  </button>
-                  <button className='sol-btn-reject' onClick={()=>handleStatus(req.id, 'rechazado')}>Cancelar prestamo</button>
+                    <button className="sol-btn-approve" style={{ backgroundColor: '#060c53', color: '#fff', border: 'none' }} onClick={() => abrirModalDevolucion(req)}>
+                      Registrar devolución
+                    </button>
+                    <button className="sol-btn-reject" onClick={() => handleStatus(req.id, 'rechazado')}>Cancelar préstamo</button>
                   </>
                 )}
-                {(req.status ==='aprobado' || req.status==='finalizado')&&(
+                {(req.status === 'aprobado' || req.status === 'finalizado') && (
                   <button className="sol-btn-pdf" onClick={() => generarPDF(req)}>
                     <FaFilePdf size={12} /> PDF
                   </button>
@@ -558,8 +579,8 @@ export default function SolicitudMaterial() {
         </div>
       )}
 
-      {/* ── Modal detalle ─────────────────────────────────────────── */}
-      {selected && (
+      {/* ── Modal detalle ──────────────────────────────────────────── */}
+      {selected && !devolucionOpen && (
         <div className="sol-modal-overlay" onClick={() => setSelected(null)}>
           <div className="sol-modal" onClick={e => e.stopPropagation()}>
             <div className="sol-modal-header">
@@ -567,6 +588,7 @@ export default function SolicitudMaterial() {
               <button onClick={() => setSelected(null)}>✕</button>
             </div>
             <div className="sol-modal-body">
+              {/*  Grid corregido */}
               <div className="sol-detail-grid">
                 {[
                   ['Solicitante', selected.user_nombre_completo],
@@ -584,6 +606,7 @@ export default function SolicitudMaterial() {
                   </div>
                 ))}
               </div>
+
               <table className="sol-table">
                 <thead>
                   <tr><th>#</th><th>Cant.</th><th>Unidad</th><th>Material</th><th>Obs.</th></tr>
@@ -592,36 +615,27 @@ export default function SolicitudMaterial() {
                   {(selected.materials || []).map((m, i) => (
                     <tr key={i}>
                       <td>{i + 1}</td><td>{m.cantidad}</td><td>{m.unidad}</td>
-                      <td>{m.material_name}</td><td>{m.observaciones}</td>
+                      <td>{(m.material_name || '').replace(/\s*\(Disp:?.*?\)/gi, '').replace(/^\[(Reactivo|Material)\]\s*/i, '').trim()}</td><td>{m.observaciones}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+
               <div className="sol-modal-actions">
                 {selected.status === 'pendiente' && (
                   <>
-                    <button className="sol-btn-approve" onClick={() => handleStatus(selected.id, 'aprobado')}>
-                       Aprobar
-                    </button>
-                    <button className="sol-btn-reject" onClick={() => handleStatus(selected.id, 'rechazado')}>
-                      Rechazar
-                    </button>
+                    <button className="sol-btn-approve" onClick={() => handleStatus(selected.id, 'aprobado')}>Aprobar</button>
+                    <button className="sol-btn-reject" onClick={() => handleStatus(selected.id, 'rechazado')}>Rechazar</button>
                   </>
                 )}
                 {selected.status === 'aprobado' && (
                   <>
-                    <button className="sol-btn-reject" onClick={() => handleStatus(selected.id, 'rechazado')}>
-                       Cambiar a Rechazado
-                    </button>
-                    <button className="sol-btn-pdf" onClick={() => generarPDF(selected)}>
-                      <FaFilePdf size={12} /> Descargar PDF
-                    </button>
+                    <button className="sol-btn-reject" onClick={() => handleStatus(selected.id, 'rechazado')}>Cambiar a Rechazado</button>
+                    <button className="sol-btn-pdf" onClick={() => generarPDF(selected)}><FaFilePdf size={12} /> Descargar PDF</button>
                   </>
                 )}
                 {selected.status === 'rechazado' && (
-                  <button className="sol-btn-approve" onClick={() => handleStatus(selected.id, 'aprobado')}>
-                    Cambiar a Aprobado
-                  </button>
+                  <button className="sol-btn-approve" onClick={() => handleStatus(selected.id, 'aprobado')}>Cambiar a Aprobado</button>
                 )}
                 <button className="sol-btn-eye" onClick={() => setSelected(null)}>Cerrar</button>
               </div>
@@ -629,47 +643,57 @@ export default function SolicitudMaterial() {
           </div>
         </div>
       )}
-      {devolucionOpen && selected &&(
-        <div className='sol-modal-overlay' onClick={()=>setDevolucionOpen(false)}>
-          <div className='sol-modal' onClick={e=>e.stopPropagation()} style={{maxWidth:'600px'}}>
-            <div className='sol-modal-header' style={{background:'#fff'}}>
-              <span>Registrar devolucion- Solicitud #{selected.id}</span>
-              <button onClick={()=>setDevolucionOpen(false)}>X</button>
+
+      {/* ── Modal devolución ───────────────────────────────────────── */}
+      {devolucionOpen && selected && (
+        <div className="sol-modal-overlay" onClick={() => setDevolucionOpen(false)}>
+          <div className="sol-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="sol-modal-header">
+              <span>Registrar devolución — Solicitud #{selected.id}</span>
+              <button onClick={() => setDevolucionOpen(false)}>✕</button>
             </div>
-            <div className='sol-modal-body'>
-              <p style={{marginBottom:'1rem', color:'#555'}}>Registra el consumo de los reactivos y las piezas intactas devueltas</p>
+            <div className="sol-modal-body">
+              <p style={{ marginBottom: '1rem', color: '#555' }}>
+                Registra el consumo de reactivos y las piezas devueltas.
+              </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {devolucionForm.map((item, idx) => (
                   <div key={idx} style={{ padding: '1rem', border: '1px solid #ddd', borderRadius: '6px', background: '#f8f9fa' }}>
                     <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', color: '#333' }}>{item.material_name}</h4>
-                    
                     <div style={{ display: 'flex', gap: '1rem' }}>
                       {item.tipo === 'reactivo' ? (
                         <>
                           <div className="sol-field" style={{ flex: 1, margin: 0 }}>
                             <label style={{ color: '#000' }}>Frascos devueltos:</label>
-                            <input type="number" min="0" value={item.frascos_devueltos} onChange={e => updateDevolucion(idx, 'frascos_devueltos', parseInt(e.target.value))} style={{ border: '1px solid #ccc' }} />
+                            <input type="number" min="0" value={item.frascos_devueltos}
+                              onChange={e => updateDevolucion(idx, 'frascos_devueltos', parseInt(e.target.value))}
+                              style={{ border: '1px solid #ccc' }} />
                           </div>
                           <div className="sol-field" style={{ flex: 1, margin: 0 }}>
                             <label style={{ color: '#000' }}>Consumo total (g/ml):</label>
-                            <input type="number" value={item.cantidad_consumida} onChange={e => updateDevolucion(idx, 'cantidad_consumida', parseFloat(e.target.value))} style={{ border: '1px solid #ccc' }} />
+                            <input type="number" value={item.cantidad_consumida}
+                              onChange={e => updateDevolucion(idx, 'cantidad_consumida', parseFloat(e.target.value))}
+                              style={{ border: '1px solid #ccc' }} />
                           </div>
                         </>
                       ) : (
                         <div className="sol-field" style={{ flex: 1, margin: 0 }}>
                           <label style={{ color: '#000' }}>Piezas buenas devueltas:</label>
-                          <input type="number" min="0" value={item.piezas_devueltas} onChange={e => updateDevolucion(idx, 'piezas_devueltas', parseInt(e.target.value))} style={{ border: '1px solid #ccc' }} />
+                          <input type="number" min="0" value={item.piezas_devueltas}
+                            onChange={e => updateDevolucion(idx, 'piezas_devueltas', parseInt(e.target.value))}
+                            style={{ border: '1px solid #ccc' }} />
                         </div>
                       )}
                     </div>
                   </div>
                 ))}
               </div>
-              <div className='sol-modal-actions' style={{marginTop:'1.5rem'}}>
-                <button className='sol-btn-approve' style={{backgroundColor:'#220776', color:'#fff', border:'none'}} disabled={loading} onClick={submitDevolucion}>
-                  {loading ? 'Procesando...' : 'Confirmar devolucion'}
+              <div className="sol-modal-actions" style={{ marginTop: '1.5rem' }}>
+                <button className="sol-btn-approve" style={{ backgroundColor: '#220776', color: '#fff', border: 'none' }}
+                  disabled={loading} onClick={submitDevolucion}>
+                  {loading ? 'Procesando...' : 'Confirmar devolución'}
                 </button>
-                <button className='sol-btn-eye' onClick={()=>setDevolucionOpen(false)}>Cancelar</button>
+                <button className="sol-btn-eye" onClick={() => setDevolucionOpen(false)}>Cancelar</button>
               </div>
             </div>
           </div>
@@ -678,87 +702,59 @@ export default function SolicitudMaterial() {
     </div>
   );
 }
-const BuscadorInventario=({inventario, valorSeleccionado, onSelect})=>{
-    const[busqueda, setBusqueda]=useState('');
-    const[abierto, setAbierto]=useState(false);
-    const itemSeleccionado=inventario.find(i=>i.id_unico === valorSeleccionado);
-    const normalizarTexto=(texto)=>{
-      return texto.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-    }
-    const filtrados=inventario.filter(item=>
-      normalizarTexto(item.nombre).includes(normalizarTexto(busqueda))
-    );
-return (
+
+// ── Buscador de inventario ─────────────────────────────────────────────────
+const BuscadorInventario = ({ inventario, valorSeleccionado, onSelect }) => {
+  const [busqueda, setBusqueda] = useState('');
+  const [abierto, setAbierto] = useState(false);
+  const itemSeleccionado = inventario.find(i => i.id_unico === valorSeleccionado);
+
+  const normalizarTexto = (texto) =>
+    texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  const filtrados = inventario.filter(item =>
+    normalizarTexto(item.nombre).includes(normalizarTexto(busqueda))
+  );
+
+  return (
     <div style={{ position: 'relative', width: '100%' }}>
-      {/* Botón que simula el select */}
-      <div
-        onClick={() => setAbierto(true)}
-        style={{
-          padding: '8px', border: '1px solid #ccc', borderRadius: '4px',
-          background: '#fff', color: '#333', cursor: 'pointer',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          minHeight: '40px'
-        }}
-      >
+      <div onClick={() => setAbierto(true)} style={{
+        padding: '8px', border: '1px solid #ccc', borderRadius: '4px',
+        background: '#fff', color: '#333', cursor: 'pointer',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: '40px'
+      }}>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {itemSeleccionado ? itemSeleccionado.nombre : 'Seleccionar o buscar material...'}
         </span>
         <span style={{ fontSize: '0.8rem', color: '#666' }}>▼</span>
       </div>
 
-      {/* Lista desplegable flotante */}
       {abierto && (
         <>
-          {/* Capa invisible para cerrar al hacer clic afuera */}
-          <div 
-            onClick={() => setAbierto(false)} 
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} 
-          />
-          
+          <div onClick={() => setAbierto(false)}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} />
           <div style={{
             position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
             background: '#fff', border: '1px solid #ccc', borderRadius: '4px',
-            maxHeight: '250px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            marginTop: '4px'
+            maxHeight: '250px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', marginTop: '4px'
           }}>
-            {/* Barra de búsqueda interna */}
             <div style={{ padding: '8px', position: 'sticky', top: 0, background: '#f8f9fa', borderBottom: '1px solid #ddd' }}>
-              <input
-                type="text"
-                autoFocus
-                placeholder="Escribe para buscar..."
-                value={busqueda}
+              <input type="text" autoFocus placeholder="Escribe para buscar..." value={busqueda}
                 onChange={e => setBusqueda(e.target.value)}
-                style={{
-                  width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px',
-                  outline: 'none', color: '#333'
-                }}
-              />
+                style={{ width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px', outline: 'none', color: '#333' }} />
             </div>
-
-            {/* Opciones filtradas */}
             {filtrados.length === 0 ? (
               <div style={{ padding: '10px', color: '#888', textAlign: 'center' }}>No se encontraron resultados</div>
-            ) : (
-              filtrados.map(item => (
-                <div
-                  key={item.id_unico}
-                  onClick={() => {
-                    onSelect(item.id_unico);
-                    setAbierto(false);
-                    setBusqueda(''); // Limpiamos la búsqueda al seleccionar
-                  }}
-                  style={{
-                    padding: '10px 8px', cursor: 'pointer', color: '#333',
-                    borderBottom: '1px solid #f0f0f0', fontSize: '0.9rem'
-                  }}
-                  onMouseEnter={e => e.target.style.background = '#e9ecef'}
-                  onMouseLeave={e => e.target.style.background = 'transparent'}
-                >
-                  {item.nombre}
-                </div>
-              ))
-            )}
+            ) : filtrados.map(item => (
+              <div key={item.id_unico}
+                onClick={() => { onSelect(item.id_unico); setAbierto(false); setBusqueda(''); }}
+                style={{ padding: '10px 8px', cursor: 'pointer', color: '#333', borderBottom: '1px solid #f0f0f0', fontSize: '0.9rem' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#e9ecef'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                {item.nombre}
+              </div>
+            ))}
           </div>
         </>
       )}

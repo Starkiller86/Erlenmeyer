@@ -48,25 +48,20 @@ async function verifyToken(req, res, next) {
 }
 
 async function onlyAdmin(req, res, next) {
-  console.log("1. Objeto de usuario extraído del token:", req.user);
-  const userEmail = req.user.email;
-  console.log("2. Buscando en la tabla 'usuarios' el correo:", userEmail);
-  const { data: user, error } = await supabase
+  const { data: perfil, error } = await supabase
     .from('perfiles')
-    .select('*')
-    .eq('email', userEmail)
+    .select('rol')
+    .eq('id', req.user.id)
     .single();
-  console.log("3. Resultado de la base de datos:", error || user);
-  if (error || !user)
-    return res.status(403).json({ error: "Perfil no encontrado" });
-  if (user.rol !== 'admin')
-    return res.status(403).json({ error: 'Solo administradores' });
-  next();
-  // if (req.user.rol !== 'admin')
-  //   return res.status(403).json({ error: 'Solo administradores' });
-  // next();
-}
 
+  if (error || !perfil)
+    return res.status(403).json({ error: "Perfil no encontrado" });
+
+  if (perfil.rol !== 'admin')
+    return res.status(403).json({ error: 'Solo administradores' });
+
+  next();
+}
 // ============================================
 // RUTA RAÍZ
 // ============================================
@@ -173,7 +168,7 @@ app.post('/api/auth/login', async (req, res) => {
   if (error || !user)
     return res.status(401).json({ error: 'Usuario no válido' });
 
-  if (password !== user.password) // ⚠️ aquí puedes meter bcrypt después
+  if (password !== user.password) 
     return res.status(401).json({ error: 'Contraseña incorrecta' });
 
   const token = jwt.sign(
@@ -213,51 +208,58 @@ app.get('/api/alertas/caducidad', async (req, res) => {
 });
 
 //CAMBIAR ESTADO DE SOLICITUD
-
 app.put('/api/solicitudes/:id/status', verifyToken, onlyAdmin, async (req, res) => {
   const { status } = req.body;
   const solicitudId = parseInt(req.params.id);
 
   try {
-    //Obtener solicitud
     const { data: solicitud, error } = await supabase
       .from('loan_requests')
       .select('*')
       .eq('id', solicitudId)
       .single();
-    if (error || !solicitud) return res.status(404).json({ error: 'Solicitud no encontrada' })
-    //Si es aprobada descontar del inventario
+
+    if (error || !solicitud) return res.status(404).json({ error: 'Solicitud no encontrada' });
+
     if (status === 'aprobado') {
       for (const mat of solicitud.materials) {
-        const idBuscado = mat.material_id;
+        const nombre = mat.material_name;
         const cantidadSolicitada = parseFloat(mat.cantidad);
-        const tipo = mat.tipo || 'reactivo';
+        const tipo = mat.tipo || 'material'; // sin tipo → asume material
+
         if (tipo === 'reactivo') {
           const { data: reactivo, error: reactivoError } = await supabase
             .from('reactivos')
             .select('*')
-            .eq('id', idBuscado)
+            .ilike('nombre', nombre)
             .single();
-          if (reactivoError) throw reactivoError;
+
+          if (reactivoError || !reactivo)
+            return res.status(400).json({ error: `Reactivo no encontrado: ${nombre}` });
+
           const nuevosFrascos = reactivo.numero_frascos - cantidadSolicitada;
-          if (nuevosFrascos < 0) return res.status(400).json({ error: `Stock insuficiente para ${reactivo.nombre}` });
+          if (nuevosFrascos < 0)
+            return res.status(400).json({ error: `Stock insuficiente para ${nombre}` });
 
           await supabase
             .from('reactivos')
             .update({ numero_frascos: nuevosFrascos })
             .eq('id', reactivo.id);
-        }
-        //Materiales
-        else if (tipo === 'material') {
+
+        } else {
           const { data: material, error: matError } = await supabase
             .from('Materiales')
             .select('*')
-            .eq('id', idBuscado)
+            .ilike('nombre', nombre)
             .single();
 
-          if (matError) throw matError;
+          if (matError || !material)
+            return res.status(400).json({ error: `Material no encontrado: ${nombre}` });
+
           const nuevaCantidad = material.cantidad - cantidadSolicitada;
-          if (nuevaCantidad < 0) return res.status(400).json({ error: `Stock insuficiente para ${material.nombre}` });
+          if (nuevaCantidad < 0)
+            return res.status(400).json({ error: `Stock insuficiente para ${nombre}` });
+
           await supabase
             .from('Materiales')
             .update({ cantidad: nuevaCantidad })
@@ -265,13 +267,15 @@ app.put('/api/solicitudes/:id/status', verifyToken, onlyAdmin, async (req, res) 
         }
       }
     }
-    //Actualizar estado de la solicitud
+
     const { error: updateError } = await supabase
       .from('loan_requests')
       .update({ status })
       .eq('id', solicitudId);
+
     if (updateError) throw updateError;
     res.json({ success: true });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -279,71 +283,71 @@ app.put('/api/solicitudes/:id/status', verifyToken, onlyAdmin, async (req, res) 
 });
 
 //Devolucion de materiales y reactivos
-app.put('/api/solicitudes/:id/devolver', verifyToken, onlyAdmin, async(req,res)=>{
-  const solicitudId=parseInt(req.params.id);
-  const{devoluciones}=req.body;
+app.put('/api/solicitudes/:id/devolver', verifyToken, onlyAdmin, async (req, res) => {
+  const solicitudId = parseInt(req.params.id);
+  const { devoluciones } = req.body;
 
-  try{
-    const{data:solicitud, error:solError} = await supabase
-    .from('loan_requests')
-    .select('*')
-    .eq('id', solicitudId)
-    .single();
-    if(solError || !solicitud) return res.status(400).json({error: 'Solicitud no encontrada'});
-    if(solicitud.status !== 'aprobado'){
-      return res.status(400).json({error:'Solo se pueden devolver solicitudes que esten aprobadas.'});
+  try {
+    const { data: solicitud, error: solError } = await supabase
+      .from('loan_requests')
+      .select('*')
+      .eq('id', solicitudId)
+      .single();
+    if (solError || !solicitud) return res.status(400).json({ error: 'Solicitud no encontrada' });
+    if (solicitud.status !== 'aprobado') {
+      return res.status(400).json({ error: 'Solo se pueden devolver solicitudes que esten aprobadas.' });
     }
-    for(const dev of devoluciones){
-      const idBuscado=dev.material_id;
-      const tipo=dev.tipo || 'reactivo';
+    for (const dev of devoluciones) {
+      const idBuscado = dev.material_id;
+      const tipo = dev.tipo || 'reactivo';
 
-      if(tipo === 'reactivo'){
-        const{data:reactivo, error:errorR}=await supabase
-        .from('reactivos')
-        .select('*')
-        .eq('id', idBuscado)
-        .single();
+      if (tipo === 'reactivo') {
+        const { data: reactivo, error: errorR } = await supabase
+          .from('reactivos')
+          .select('*')
+          .eq('id', idBuscado)
+          .single();
 
-        if(errorR || !reactivo) throw new Error(`Reactivo no encontrado en BD`);
-        const frascosDevueltos=parseInt(dev.frascos_devueltos) || 0;
-        const cantidadConsumida=parseFloat(dev.cantidad_consumida) || 0;
-        const nuevosFrascos=reactivo.numero_frascos + frascosDevueltos;
-        let nuevaCantidad=reactivo.cantidad_actual - cantidadConsumida;
+        if (errorR || !reactivo) throw new Error(`Reactivo no encontrado en BD`);
+        const frascosDevueltos = parseInt(dev.frascos_devueltos) || 0;
+        const cantidadConsumida = parseFloat(dev.cantidad_consumida) || 0;
+        const nuevosFrascos = reactivo.numero_frascos + frascosDevueltos;
+        let nuevaCantidad = reactivo.cantidad_actual - cantidadConsumida;
 
-        if(nuevaCantidad<0) nuevaCantidad=0;
+        if (nuevaCantidad < 0) nuevaCantidad = 0;
         await supabase
-        .from('reactivos')
-        .update({
-          numero_frascos:nuevosFrascos,
-          cantidad_actual:nuevaCantidad
-        })
-        .eq('id', reactivo.id);
-      }else if(tipo ==='material'){
-        const{data:material, error:errorM}=await supabase
-        .from('Materiales')
-        .select('*')
-        .eq('id', idBuscado)
-        .single();
-        if(errorM || !material) throw new Error(`Material no encontrado en BD`);
-        const piezasDevueltas=parseInt(dev.piezas_devueltas) || 0;
-        const nuevaCantidad=material.cantidad + piezasDevueltas;
+          .from('reactivos')
+          .update({
+            numero_frascos: nuevosFrascos,
+            cantidad_actual: nuevaCantidad
+          })
+          .eq('id', reactivo.id);
+      } else if (tipo === 'material') {
+        const { data: material, error: errorM } = await supabase
+          .from('Materiales')
+          .select('*')
+          .eq('id', idBuscado)
+          .single();
+        if (errorM || !material) throw new Error(`Material no encontrado en BD`);
+        const piezasDevueltas = parseInt(dev.piezas_devueltas) || 0;
+        const nuevaCantidad = material.cantidad + piezasDevueltas;
 
         await supabase
-        .from('Materiales')
-        .update({cantidad:nuevaCantidad})
-        .eq('id', material.id);
+          .from('Materiales')
+          .update({ cantidad: nuevaCantidad })
+          .eq('id', material.id);
       }
     }
-    const{error:updateError}=await supabase
-    .from('loan_requests')
-    .update({status:'finalizado'})
-    .eq('id', solicitudId);
+    const { error: updateError } = await supabase
+      .from('loan_requests')
+      .update({ status: 'finalizado' })
+      .eq('id', solicitudId);
 
-    if(updateError) throw updateError;
-    res.json({sucess:true, message:'Devolucion registrada y stock actualizado correctamente'});
-  }catch(err){
-    console.error('Error en devolucion:',err);
-    res.status(500).json({error:err.message});
+    if (updateError) throw updateError;
+    res.json({ sucess: true, message: 'Devolucion registrada y stock actualizado correctamente' });
+  } catch (err) {
+    console.error('Error en devolucion:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
