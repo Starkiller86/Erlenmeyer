@@ -74,6 +74,10 @@ const NavBar = () => {
                   <FaList size={16} /> Mostrar Reactivos
                 </Nav.Link>
 
+                <Nav.Link as={Link} to="/mostrarmat" className="btn">
+                  <FaList size={16} /> Mostrar Material
+                </Nav.Link>
+
                 <Nav.Link as={Link} to="/lector" className="btn">
                   <FaQrcode size={16} /> Lector QR
                 </Nav.Link>

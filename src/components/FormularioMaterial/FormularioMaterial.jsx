@@ -83,7 +83,9 @@ const FormularioMaterial = () => {
                         <div style={{background:'#fff', padding:'1rem', display:'inline-block', borderRadius:'8px'}}>
                             <QRCodeSVG value={codigoQR} size={150}></QRCodeSVG>
                         </div>
-                        <p style={{marginTop:'1rem'}}><code>{codigoQR}</code></p>
+                        <p style={{marginTop:'1rem'}}>
+                            <code style={{color: '#ffffff', fontSize: '1.2rem'}}>{codigoQR}</code>
+                        </p>
                     </div>
                 )}
             </div>
