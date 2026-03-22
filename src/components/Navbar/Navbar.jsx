@@ -1,6 +1,6 @@
 /* src/components/Navbar/Navbar.jsx - MODIFICADO */
 import { Link, useNavigate } from 'react-router-dom';
-import { Container, Nav, Navbar, Offcanvas } from 'react-bootstrap';
+import { Container, Nav, Navbar, Offcanvas, NavDropdown } from 'react-bootstrap';
 import { GiChemicalDrop } from 'react-icons/gi';
 import { FaHome, FaPlus, FaList, FaQrcode, FaClipboardList, FaSignOutAlt, FaUserCircle } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
@@ -15,19 +15,19 @@ const NavBar = () => {
   const [showLogoutM, setShowLogoutM] = useState(false);
 
   // MUESTRA SI QUIERE CERRAR SESIÓN
-  const handleLogoutClick= () => {
+  const handleLogoutClick = () => {
     setShowLogoutM(true);
   };
 
   // CONFIRMA
-  const handleLogoutConfirm = () =>{
+  const handleLogoutConfirm = () => {
     setShowLogoutM(false);
     logout();
     navigate('/login');
   }
 
   // CANCELA
-  const handleLogoutCancel =() =>{
+  const handleLogoutCancel = () => {
     setShowLogoutM(false);
   }
 
@@ -62,21 +62,32 @@ const NavBar = () => {
                   <FaHome size={16} /> Inicio
                 </Nav.Link>
 
-                <Nav.Link as={Link} to="/alta" className="btn">
-                  <FaPlus size={16} /> Alta de Reactivos
-                </Nav.Link>
+                <NavDropdown
+                  title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><FaPlus size={16} />Registrar</span>}
+                  id="altas-dropdown"
+                  className='btn'>
+                  <NavDropdown.Item as={Link} to="/alta">
+                    Alta de Reactivos
+                  </NavDropdown.Item>
 
-                <Nav.Link as={Link} to="/altamat" className="btn">
-                  <FaPlus size={16} /> Alta de Material
-                </Nav.Link>
+                  <NavDropdown.Item as={Link} to="/altamat">
+                    Alta de Material
+                  </NavDropdown.Item>
+                </NavDropdown>
 
-                <Nav.Link as={Link} to="/mostrar" className="btn">
-                  <FaList size={16} /> Mostrar Reactivos
-                </Nav.Link>
+                <NavDropdown
+                  title={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><FaList size={16} />Mostrar</span>}
+                  id="mostrar-dropdown"
+                  className='btn'>
+                  <NavDropdown.Item as={Link} to="/mostrar">
+                    Mostrar Reactivos
+                  </NavDropdown.Item>
 
-                <Nav.Link as={Link} to="/mostrarmat" className="btn">
-                  <FaList size={16} /> Mostrar Material
-                </Nav.Link>
+                  <NavDropdown.Item as={Link} to="/mostrarmat">
+                    Mostrar Material
+                  </NavDropdown.Item>
+                </NavDropdown>
+
 
                 <Nav.Link as={Link} to="/lector" className="btn">
                   <FaQrcode size={16} /> Lector QR
@@ -119,7 +130,7 @@ const NavBar = () => {
         <div className="modal-overlay" onClick={handleLogoutCancel}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <div className="modal-icon">
-              <FaSignOutAlt size={24}/>
+              <FaSignOutAlt size={24} />
             </div>
             <h3>¿Cerrar sesión?</h3>
             <p>¿Estás seguro de que desea salir de tu cuenta?</p>
@@ -132,7 +143,7 @@ const NavBar = () => {
       )}
     </>
   );
- 
+
 };
 
 export default NavBar;

@@ -15,12 +15,12 @@ const MostrarMaterial=()=>{
 
     useEffect(()=>{
         cargarMateriales();
-    },[busqueda]); //Se vuelve a ejecutar si cambia la busqueda
+    },[]); //Se vuelve a ejecutar si cambia la busqueda
 
     const cargarMateriales=async()=>{
         setCargando(true);
         try{
-            const data=await obtenerMateriales(busqueda);
+            const data=await obtenerMateriales();
             setMateriales(data);
         }catch(error){
             console.error('Error al cargar materiales: ', error);
@@ -61,6 +61,13 @@ const MostrarMaterial=()=>{
         }
     };
 
+    const normalizarTexto=(texto)=>{
+        return texto.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+    };
+
+    const materialesFiltrados=materiales.filter(mat=>
+        normalizarTexto(mat.nombre).includes(normalizarTexto(busqueda))
+    );
     //Descargar QR
     const descargarQR=(codigo, nombre)=>{
         const svg=document.getElementById('qr-code-svg-material');
@@ -111,10 +118,10 @@ const MostrarMaterial=()=>{
                 </div>
             ):(
                 <div className='reactivos-grid'>
-                    {materiales.length===0 ? (
+                    {materialesFiltrados.length===0 ? (
                         <div className='no-resultados'><p>No se encontraron materiales</p></div>
                     ):(
-                        materiales.map((mat)=>{
+                        materialesFiltrados.map((mat)=>{
                             const stockBajo=mat.cantidad<=mat.cantidad_minima;
                             return(
                                 <div

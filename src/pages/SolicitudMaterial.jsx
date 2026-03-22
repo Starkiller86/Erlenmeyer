@@ -268,6 +268,7 @@ export default function SolicitudMaterial() {
     if(!filtroFecha) return true;
     return req.practice_date===filtroFecha;
   });
+
   return (
     <div className="solicitud-page" style={{ marginTop: '80px' }}>
       {/* ── Encabezado ─────────────────────────────────────────────── */}
@@ -317,7 +318,7 @@ export default function SolicitudMaterial() {
 
       {/* ════════════════ TAB: NUEVA SOLICITUD ════════════════════════ */}
       {tab === 'nueva' && (
-        <form onSubmit={handleSubmit} className="solicitud-form">
+        <form onSubmit={handleSubmit} className="solicitud-form" style={{overflow:'visible'}}>
           <div className="sol-card">
             <div className="sol-card-header">Datos de la Práctica</div>
             <div className="sol-card-body">
@@ -357,16 +358,16 @@ export default function SolicitudMaterial() {
           </div>
 
           {/* Materiales */}
-          <div className="sol-card">
+          <div className="sol-card" style={{overflow:'visible'}}>
             <div className="sol-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>Materiales Solicitados</span>
               <button type="button" className="sol-btn-add" onClick={addMat}>
                 <FaPlus size={12} /> Agregar
               </button>
             </div>
-            <div className="sol-card-body">
+            <div className="sol-card-body" style={{ overflow: 'visible' }}>
               {materials.map((mat, idx) => (
-                <div key={idx} className="sol-material-row">
+                <div key={idx} className="sol-material-row" style={{ position: 'relative', zIndex: 100 - idx }}>
                   <div className="sol-field" style={{ flex: '0 0 70px' }}>
                     <label>Cant.</label>
                     <input type="number" min={1} value={mat.cantidad} onChange={e => updateMat(idx, 'cantidad', parseInt(e.target.value))} />
@@ -375,12 +376,12 @@ export default function SolicitudMaterial() {
                     <label>Unidad</label>
                     <input value={mat.unidad} onChange={e => updateMat(idx, 'unidad', e.target.value)} placeholder="pza" />
                   </div>
-                  <div className="sol-field" style={{ flex: 1 }}>
+                  <div className="sol-field" style={{ flex: 1, overflow:'visible', minWidth:0}}>
                     <label>Equipo / Material</label>
-                    <select
-                      value={mat.material_id ? `${mat.tipo==='reactivo' ? 'R' :'M'}-${mat.material_id}` : ''}
-                      onChange={e=>{
-                        const valorSeleccionado=e.target.value;
+                    <BuscadorInventario
+                    inventario={inventario}
+                    valorSeleccionado={mat.material_id ? `${mat.tipo==='reactivo' ? 'R' :'M'}-${mat.material_id}` : ''}
+                      onSelect={(valorSeleccionado)=>{
                         if(!valorSeleccionado){
                           updateMat(idx, 'material_id','');
                           updateMat(idx, 'material_name','');
@@ -392,17 +393,7 @@ export default function SolicitudMaterial() {
                         updateMat(idx, 'material_name', selectedItem.nombre);
                         updateMat(idx, 'tipo', selectedItem.tipo);
                       }}
-                      required
-                      style={{ width: '100%', padding: '8px', borderRadius: '4px' }}
-                    >
-                      <option value="">Seleccionar reactivos o material</option>
-                      {inventario.map(item=>(
-                        <option key={item.id_unico} value={item.id_unico}>
-                          {item.nombre}
-                        </option>
-                      ))}
-                    </select>
-
+                      />
                   </div>
                   <div className="sol-field" style={{ flex: '0 0 160px' }}>
                     <label>Observaciones</label>
@@ -589,3 +580,90 @@ export default function SolicitudMaterial() {
     </div>
   );
 }
+const BuscadorInventario=({inventario, valorSeleccionado, onSelect})=>{
+    const[busqueda, setBusqueda]=useState('');
+    const[abierto, setAbierto]=useState(false);
+    const itemSeleccionado=inventario.find(i=>i.id_unico === valorSeleccionado);
+    const normalizarTexto=(texto)=>{
+      return texto.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+    }
+    const filtrados=inventario.filter(item=>
+      normalizarTexto(item.nombre).includes(normalizarTexto(busqueda))
+    );
+return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      {/* Botón que simula el select */}
+      <div
+        onClick={() => setAbierto(true)}
+        style={{
+          padding: '8px', border: '1px solid #ccc', borderRadius: '4px',
+          background: '#fff', color: '#333', cursor: 'pointer',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          minHeight: '40px'
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {itemSeleccionado ? itemSeleccionado.nombre : 'Seleccionar o buscar material...'}
+        </span>
+        <span style={{ fontSize: '0.8rem', color: '#666' }}>▼</span>
+      </div>
+
+      {/* Lista desplegable flotante */}
+      {abierto && (
+        <>
+          {/* Capa invisible para cerrar al hacer clic afuera */}
+          <div 
+            onClick={() => setAbierto(false)} 
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} 
+          />
+          
+          <div style={{
+            position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
+            background: '#fff', border: '1px solid #ccc', borderRadius: '4px',
+            maxHeight: '250px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            marginTop: '4px'
+          }}>
+            {/* Barra de búsqueda interna */}
+            <div style={{ padding: '8px', position: 'sticky', top: 0, background: '#f8f9fa', borderBottom: '1px solid #ddd' }}>
+              <input
+                type="text"
+                autoFocus
+                placeholder="Escribe para buscar..."
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                style={{
+                  width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px',
+                  outline: 'none', color: '#333'
+                }}
+              />
+            </div>
+
+            {/* Opciones filtradas */}
+            {filtrados.length === 0 ? (
+              <div style={{ padding: '10px', color: '#888', textAlign: 'center' }}>No se encontraron resultados</div>
+            ) : (
+              filtrados.map(item => (
+                <div
+                  key={item.id_unico}
+                  onClick={() => {
+                    onSelect(item.id_unico);
+                    setAbierto(false);
+                    setBusqueda(''); // Limpiamos la búsqueda al seleccionar
+                  }}
+                  style={{
+                    padding: '10px 8px', cursor: 'pointer', color: '#333',
+                    borderBottom: '1px solid #f0f0f0', fontSize: '0.9rem'
+                  }}
+                  onMouseEnter={e => e.target.style.background = '#e9ecef'}
+                  onMouseLeave={e => e.target.style.background = 'transparent'}
+                >
+                  {item.nombre}
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
