@@ -86,6 +86,7 @@ const STATUS = {
   pendiente: { label: 'Pendiente', cls: 'badge-pendiente' },
   aprobado: { label: 'Aprobado', cls: 'badge-aprobado' },
   rechazado: { label: 'Rechazado', cls: 'badge-rechazado' },
+  finalizado:{label:'Finalizado', cls:'badge-finalizado'},
 };
 
 export default function SolicitudMaterial() {
@@ -106,6 +107,8 @@ export default function SolicitudMaterial() {
   const[filtroFecha, setFiltroFecha]=useState('');
   // Enviar o no la solicitud
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const[devolucionOpen, setDevolucionOpen]=useState(false);
+  const[devolucionForm, setDevolucionForm]=useState([]);
 
 
 
@@ -230,7 +233,48 @@ export default function SolicitudMaterial() {
     //   showMsg('danger', err.message);
     // }
   }
+  const abrirModalDevolucion=(req)=>{
+    setSelected(req);
+    const initialForm=(req.materials || []).map(m=>({
+      material_id:m.material_id,
+      material_name:m.material_name,
+      tipo:m.tipo || 'reactivo',
+      frascos_devueltos:m.cantidad,
+      cantidad_consumida:0,
+      piezas_devueltas:m.cantidad
+    }));
+    setDevolucionForm(initialForm);
+    setDevolucionOpen(true);
+  };
 
+  const updateDevolucion=(idx, field, value)=>{
+    setDevolucionForm(p=>p.map((item,i)=>i===idx ? {...item, [field]:value}:item));
+  };
+
+  const submitDevolucion=async()=>{
+    setLoading(true);
+    try{
+      const token=await getToken();
+      const res=await fetch(`http://localhost:3001/api/solicitudes/${selected.id}/devolver`,{
+        method:'PUT',
+        headers:{
+          'Content-Type':'application/json',
+          Authorization:`Bearer ${token}`
+        },
+        body:JSON.stringify({devoluciones:devolucionForm})
+      });
+      const data=await res.json();
+      if(!res.ok) throw new Error(data.error);
+      showMsg('success', 'Devolucion registrada correctamente');
+      setDevolucionOpen(false);
+      setSelected(null);
+      loadRequests(true);
+    }catch(err){
+      showMsg('danger', err.message);
+    }finally{
+      setLoading(false);
+    }
+  };
   //Cargar el inventario
   useEffect(()=>{
     const cargarInventario=async() =>{
@@ -496,6 +540,14 @@ export default function SolicitudMaterial() {
                   </>
                 )}
                 {req.status === 'aprobado' && (
+                  <>
+                  <button className='sol-btn-approve' style={{backgroundColor:'#060c53', color:'#fff', border:'none'}} onClick={()=>abrirModalDevolucion(req)}>
+                    Registrar devolucion
+                  </button>
+                  <button className='sol-btn-reject' onClick={()=>handleStatus(req.id, 'rechazado')}>Cancelar prestamo</button>
+                  </>
+                )}
+                {(req.status ==='aprobado' || req.status==='finalizado')&&(
                   <button className="sol-btn-pdf" onClick={() => generarPDF(req)}>
                     <FaFilePdf size={12} /> PDF
                   </button>
@@ -572,6 +624,52 @@ export default function SolicitudMaterial() {
                   </button>
                 )}
                 <button className="sol-btn-eye" onClick={() => setSelected(null)}>Cerrar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {devolucionOpen && selected &&(
+        <div className='sol-modal-overlay' onClick={()=>setDevolucionOpen(false)}>
+          <div className='sol-modal' onClick={e=>e.stopPropagation()} style={{maxWidth:'600px'}}>
+            <div className='sol-modal-header' style={{background:'#fff'}}>
+              <span>Registrar devolucion- Solicitud #{selected.id}</span>
+              <button onClick={()=>setDevolucionOpen(false)}>X</button>
+            </div>
+            <div className='sol-modal-body'>
+              <p style={{marginBottom:'1rem', color:'#555'}}>Registra el consumo de los reactivos y las piezas intactas devueltas</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {devolucionForm.map((item, idx) => (
+                  <div key={idx} style={{ padding: '1rem', border: '1px solid #ddd', borderRadius: '6px', background: '#f8f9fa' }}>
+                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', color: '#333' }}>{item.material_name}</h4>
+                    
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      {item.tipo === 'reactivo' ? (
+                        <>
+                          <div className="sol-field" style={{ flex: 1, margin: 0 }}>
+                            <label style={{ color: '#000' }}>Frascos devueltos:</label>
+                            <input type="number" min="0" value={item.frascos_devueltos} onChange={e => updateDevolucion(idx, 'frascos_devueltos', parseInt(e.target.value))} style={{ border: '1px solid #ccc' }} />
+                          </div>
+                          <div className="sol-field" style={{ flex: 1, margin: 0 }}>
+                            <label style={{ color: '#000' }}>Consumo total (g/ml):</label>
+                            <input type="number" value={item.cantidad_consumida} onChange={e => updateDevolucion(idx, 'cantidad_consumida', parseFloat(e.target.value))} style={{ border: '1px solid #ccc' }} />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="sol-field" style={{ flex: 1, margin: 0 }}>
+                          <label style={{ color: '#000' }}>Piezas buenas devueltas:</label>
+                          <input type="number" min="0" value={item.piezas_devueltas} onChange={e => updateDevolucion(idx, 'piezas_devueltas', parseInt(e.target.value))} style={{ border: '1px solid #ccc' }} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className='sol-modal-actions' style={{marginTop:'1.5rem'}}>
+                <button className='sol-btn-approve' style={{backgroundColor:'#220776', color:'#fff', border:'none'}} disabled={loading} onClick={submitDevolucion}>
+                  {loading ? 'Procesando...' : 'Confirmar devolucion'}
+                </button>
+                <button className='sol-btn-eye' onClick={()=>setDevolucionOpen(false)}>Cancelar</button>
               </div>
             </div>
           </div>

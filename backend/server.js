@@ -9,6 +9,7 @@ import QRCode from 'qrcode';
 import jwt from 'jsonwebtoken';
 import PDFDocument from 'pdfkit';
 import { supabase } from './config/database.config.js';
+import { parse } from 'dotenv';
 
 const app = express();
 
@@ -276,6 +277,76 @@ app.put('/api/solicitudes/:id/status', verifyToken, onlyAdmin, async (req, res) 
     res.status(500).json({ error: err.message });
   }
 });
+
+//Devolucion de materiales y reactivos
+app.put('/api/solicitudes/:id/devolver', verifyToken, onlyAdmin, async(req,res)=>{
+  const solicitudId=parseInt(req.params.id);
+  const{devoluciones}=req.body;
+
+  try{
+    const{data:solicitud, error:solError} = await supabase
+    .from('loan_requests')
+    .select('*')
+    .eq('id', solicitudId)
+    .single();
+    if(solError || !solicitud) return res.status(400).json({error: 'Solicitud no encontrada'});
+    if(solicitud.status !== 'aprobado'){
+      return res.status(400).json({error:'Solo se pueden devolver solicitudes que esten aprobadas.'});
+    }
+    for(const dev of devoluciones){
+      const idBuscado=dev.material_id;
+      const tipo=dev.tipo || 'reactivo';
+
+      if(tipo === 'reactivo'){
+        const{data:reactivo, error:errorR}=await supabase
+        .from('reactivos')
+        .select('*')
+        .eq('id', idBuscado)
+        .single();
+
+        if(errorR || !reactivo) throw new Error(`Reactivo no encontrado en BD`);
+        const frascosDevueltos=parseInt(dev.frascos_devueltos) || 0;
+        const cantidadConsumida=parseFloat(dev.cantidad_consumida) || 0;
+        const nuevosFrascos=reactivo.numero_frascos + frascosDevueltos;
+        let nuevaCantidad=reactivo.cantidad_actual - cantidadConsumida;
+
+        if(nuevaCantidad<0) nuevaCantidad=0;
+        await supabase
+        .from('reactivos')
+        .update({
+          numero_frascos:nuevosFrascos,
+          cantidad_actual:nuevaCantidad
+        })
+        .eq('id', reactivo.id);
+      }else if(tipo ==='material'){
+        const{data:material, error:errorM}=await supabase
+        .from('Materiales')
+        .select('*')
+        .eq('id', idBuscado)
+        .single();
+        if(errorM || !material) throw new Error(`Material no encontrado en BD`);
+        const piezasDevueltas=parseInt(dev.piezas_devueltas) || 0;
+        const nuevaCantidad=material.cantidad + piezasDevueltas;
+
+        await supabase
+        .from('Materiales')
+        .update({cantidad:nuevaCantidad})
+        .eq('id', material.id);
+      }
+    }
+    const{error:updateError}=await supabase
+    .from('loan_requests')
+    .update({status:'finalizado'})
+    .eq('id', solicitudId);
+
+    if(updateError) throw updateError;
+    res.json({sucess:true, message:'Devolucion registrada y stock actualizado correctamente'});
+  }catch(err){
+    console.error('Error en devolucion:',err);
+    res.status(500).json({error:err.message});
+  }
+});
+
 // ============================================
 // HEALTH
 // ============================================
