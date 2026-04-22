@@ -325,6 +325,51 @@ export const actualizarMaterial = async (id, datos) => {
   if (error) throw error;
   return data;
 };
+
+// ============================================
+// FIRMA Y QR DE USUARIO
+// ============================================
+
+// REEMPLAZA la función guardarFirmaUsuario en api.service.js
+
+export const guardarFirmaUsuario = async (userId, firmaBlob) => {
+    // 1. Subir firma
+    const firmaPath = `firmas/${userId}/firma.png`;
+    const { error: errFirma } = await supabase.storage
+        .from('firmas')
+        .upload(firmaPath, firmaBlob, { upsert: true, contentType: 'image/png' });
+    if (errFirma) throw errFirma;
+
+    const { data: { publicUrl: firmaUrl } } = supabase.storage
+        .from('firmas').getPublicUrl(firmaPath);
+
+    // 2. Generar QR con la URL pública de la firma (no con el base64)
+    const QRCode = (await import('qrcode')).default;
+    const qrDataUrl = await QRCode.toDataURL(firmaUrl, { width: 300, margin: 2 });
+    const qrBlob = await (await fetch(qrDataUrl)).blob();
+
+    // 3. Subir QR
+    const qrPath = `firmas/${userId}/qr.png`;
+    const { error: errQr } = await supabase.storage
+        .from('firmas')
+        .upload(qrPath, qrBlob, { upsert: true, contentType: 'image/png' });
+    if (errQr) throw errQr;
+
+    const { data: { publicUrl: qrUrl } } = supabase.storage
+        .from('firmas').getPublicUrl(qrPath);
+
+    // 4. Guardar URLs en perfiles
+    const { data, error: errDb } = await supabase
+        .from('perfiles')
+        .update({ firma_url: firmaUrl, firma_qr_url: qrUrl })
+        .eq('id', userId)
+        .select()
+        .single();
+    if (errDb) throw errDb;
+
+    return { firmaUrl, qrUrl, perfil: data };
+};
+
 export default {
   obtenerClasificaciones,
   registrarReactivo,
@@ -342,5 +387,7 @@ export default {
   actualizarUsuario,
   registrarMaterial,
   obtenerMateriales,
-  actualizarMaterial
+  actualizarMaterial,
+  guardarFirmaUsuario
 };
+
